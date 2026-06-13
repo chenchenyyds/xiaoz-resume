@@ -99,8 +99,10 @@ def partial_rewrite(
     text: str,
     title: Optional[str] = None,
     style_hint: Optional[str] = None,
+    template_code: str = "classic",
+    style_options: Optional[dict] = None,
 ) -> dict:
-    """部分改写:50 积分"""
+    """部分改写:50 积分(template_code/style_options 暂未使用,仅占位防 API 报错)"""
     t0 = time.time()
     cost = get_config_int(db, "points.partial_rewrite", 50)
     logger.info(

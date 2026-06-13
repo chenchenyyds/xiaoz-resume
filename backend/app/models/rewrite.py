@@ -15,6 +15,7 @@ class RewriteRecord(Base):
     jd_text = Column(Text)
     title = Column(String(50))
     style_hint = Column(String(100))
+    template_code = Column(String(50), default="classic")
     generated_file_id = Column(Integer)
     output_text = Column(Text)
     improvement_points = Column(JSON)

@@ -30,6 +30,7 @@ class ResumeFile(Base):
     with_jd = Column(Boolean, default=False)
     jd_text = Column(Text)
     is_deleted = Column(Boolean, default=False, nullable=False)
+    template_code = Column(String(50), default="classic")
     created_at = Column(
         TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
     )
