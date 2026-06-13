@@ -50,6 +50,8 @@ def build_docx(md_text: str) -> bytes:
     流程: MD -> parse_md tokens -> 按 token 类型分别用 docx styles 渲染
     """
     import time
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
 
     t0 = time.time()
     doc = Document()
@@ -67,29 +69,42 @@ def build_docx(md_text: str) -> bytes:
     for tok in tokens:
         t = tok["type"]
         if t == "h1":
-            p = doc.add_paragraph()
-            run = p.add_run(tok["content"])
-            run.bold = True
-            run.font.size = Pt(18)
-            run.font.color.rgb = RGBColor(0x1A, 0x1A, 0x1A)
-            p.paragraph_format.space_before = Pt(12)
-            p.paragraph_format.space_after = Pt(8)
+            # 用 docx 内置 Heading 1 样式(便于大纲/导航/TOC/无障碍)
+            p = doc.add_heading(tok["content"], level=1)
+            for run in p.runs:
+                run.font.name = "Microsoft YaHei"
+                rpr = run._element.get_or_add_rPr()
+                rfonts = rpr.find(qn("w:rFonts"))
+                if rfonts is None:
+                    rfonts = OxmlElement("w:rFonts")
+                    rpr.append(rfonts)
+                rfonts.set(qn("w:eastAsia"), "Microsoft YaHei")
+                rfonts.set(qn("w:ascii"), "Calibri")
+                rfonts.set(qn("w:hAnsi"), "Calibri")
         elif t == "h2":
-            p = doc.add_paragraph()
-            run = p.add_run(tok["content"])
-            run.bold = True
-            run.font.size = Pt(14)
-            run.font.color.rgb = RGBColor(0x2A, 0x2A, 0x2A)
-            p.paragraph_format.space_before = Pt(10)
-            p.paragraph_format.space_after = Pt(4)
-            # 加底色(用段落底纹需要 OxmlElement,这里简化)
+            p = doc.add_heading(tok["content"], level=2)
+            for run in p.runs:
+                run.font.name = "Microsoft YaHei"
+                rpr = run._element.get_or_add_rPr()
+                rfonts = rpr.find(qn("w:rFonts"))
+                if rfonts is None:
+                    rfonts = OxmlElement("w:rFonts")
+                    rpr.append(rfonts)
+                rfonts.set(qn("w:eastAsia"), "Microsoft YaHei")
+                rfonts.set(qn("w:ascii"), "Calibri")
+                rfonts.set(qn("w:hAnsi"), "Calibri")
         elif t == "h3":
-            p = doc.add_paragraph()
-            run = p.add_run(tok["content"])
-            run.bold = True
-            run.font.size = Pt(12)
-            p.paragraph_format.space_before = Pt(8)
-            p.paragraph_format.space_after = Pt(3)
+            p = doc.add_heading(tok["content"], level=3)
+            for run in p.runs:
+                run.font.name = "Microsoft YaHei"
+                rpr = run._element.get_or_add_rPr()
+                rfonts = rpr.find(qn("w:rFonts"))
+                if rfonts is None:
+                    rfonts = OxmlElement("w:rFonts")
+                    rpr.append(rfonts)
+                rfonts.set(qn("w:eastAsia"), "Microsoft YaHei")
+                rfonts.set(qn("w:ascii"), "Calibri")
+                rfonts.set(qn("w:hAnsi"), "Calibri")
         elif t == "p":
             p = doc.add_paragraph()
             p.paragraph_format.space_after = Pt(4)
@@ -177,29 +192,26 @@ def _add_runs_to_paragraph(p, runs: list) -> None:
 
 
 def _add_list_paragraph(doc, list_type: str, idx: int, runs: list):
-    """加一个列表项,支持嵌套 level(用 level 缩进)"""
-    p = doc.add_paragraph()
-    p.paragraph_format.space_after = Pt(2)
-    p.paragraph_format.left_indent = Pt(12)
+    """加一个列表项,用 docx 内置 List Bullet / List Number 样式
+
+    支持嵌套 level:用 numId 偏移实现,level=0 一级 bullet,level=1 二级 bullet
+    """
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
 
     # 检测嵌套 level(从 runs[0] 的 level 字段读)
     level = 0
     if runs and "level" in runs[0]:
         level = runs[0]["level"] or 0
 
-    if level > 0:
-        p.paragraph_format.left_indent = Pt(12 * (level + 1))
+    # 选择样式
+    style_name = f"List Bullet {level + 1}" if level > 0 else "List Bullet"
+    if list_type == "ol":
+        style_name = f"List Number {level + 1}" if level > 0 else "List Number"
 
-    # 加 bullet 前缀
-    if list_type == "ul":
-        prefix = "• " if level == 0 else "◦ "  # 一级 •  二级 ◦
-    else:
-        prefix = f"{idx + 1}. "
+    p = doc.add_paragraph(style=style_name)
+    p.paragraph_format.space_after = Pt(2)
 
-    # prefix 用普通 run
-    run_p = p.add_run(prefix)
-    run_p.font.size = Pt(10.5)
-
-    # 内容用 _add_runs_to_paragraph 复用 runs
+    # 内容用 _add_runs_to_paragraph 复用 runs(支持 b/i/code/link 格式)
     _add_runs_to_paragraph(p, runs)
     return p

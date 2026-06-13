@@ -167,7 +167,9 @@ def build_pdf(md_text: str) -> bytes:
                     level = item["runs"][0]["level"] or 0
                 style = bullet2_style if level > 0 else bullet_style
                 if t == "ul":
-                    bullet = "• " if level == 0 else "◦ "
+                    # bullet 字符: 用 - (ASCII),不用 •(U+2022,STSong-Light 不含)
+                    # 视觉靠 leftIndent 缩进 + 前缀字符
+                    bullet = "- " if level == 0 else "  - "
                     story.append(Paragraph(f"{bullet}{inline_html}", style))
                 else:
                     story.append(Paragraph(f"{idx + 1}. {inline_html}", style))
