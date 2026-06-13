@@ -52,6 +52,10 @@
         <van-field v-model="styleHint" placeholder="如:突出技术深度 / 突出管理能力" />
       </div>
 
+      <div class="form-item">
+        <TemplatePicker v-model="templateCode" />
+      </div>
+
       <van-button
         block
         round

@@ -16,7 +16,9 @@ from app.schemas.rewrite import (
     FullRewriteReq,
     PartialRewriteResp,
     FullRewriteResp,
+    TemplateListResp,
 )
+from app.utils.templates.registry import list_templates
 
 router = APIRouter(prefix="/rewrite", tags=["改写"])
 
@@ -28,15 +30,19 @@ async def partial_rewrite(
     db: Session = Depends(get_db),
 ):
     logger.info(
-        f"[api.rewrite.partial] user={user.id} enter text_len={len(req.text or '')} title={req.title!r}"
+        f"[api.rewrite.partial] user={user.id} enter text_len={len(req.text or '')} title={req.title!r} template={req.template_code!r}"
     )
-    # 限频
     max_per_hour = get_config_int(db, "limit.partial_per_hour", 10)
     check_rate_limit(user.id, "partial_rewrite", max_per_hour, 3600)
-    # 统一包装:与项目其它 API 一致
     return ok(
         rewrite_service.partial_rewrite(
-            db, user.id, req.text, req.title, req.style_hint
+            db,
+            user.id,
+            req.text,
+            req.title,
+            req.style_hint,
+            template_code=req.template_code,
+            style_options=req.style_options,
         )
     )
 
@@ -48,14 +54,24 @@ async def full_rewrite(
     db: Session = Depends(get_db),
 ):
     logger.info(
-        f"[api.rewrite.full] user={user.id} enter file_id={req.file_id} has_jd={bool(req.jd_text)} jd_len={len(req.jd_text or '')}"
+        f"[api.rewrite.full] user={user.id} enter file_id={req.file_id} has_jd={bool(req.jd_text)} jd_len={len(req.jd_text or '')} template={req.template_code!r}"
     )
-    # 限频
     max_per_hour = get_config_int(db, "limit.full_per_hour", 3)
     check_rate_limit(user.id, "full_rewrite", max_per_hour, 3600)
-    # 统一包装:与项目其它 API 一致
     return ok(
         rewrite_service.full_rewrite(
-            db, user.id, req.file_id, req.jd_text, req.style_hint
+            db,
+            user.id,
+            req.file_id,
+            req.jd_text,
+            req.style_hint,
+            template_code=req.template_code,
+            style_options=req.style_options,
         )
     )
+
+
+@router.get("/templates", summary="获取简历模板列表")
+async def get_templates(db: Session = Depends(get_db)):
+    """返回内置的简历模板列表(决策 21)"""
+    return ok({"templates": list_templates()})

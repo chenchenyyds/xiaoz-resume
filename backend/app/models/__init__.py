@@ -9,6 +9,7 @@ from app.models.resume import ResumeFile
 from app.models.rewrite import RewriteRecord
 from app.models.config import SystemConfig
 from app.models.operation_log import OperationLog
+from app.models.template import ResumeTemplate
 
 __all__ = [
     "User",
@@ -21,4 +22,5 @@ __all__ = [
     "RewriteRecord",
     "SystemConfig",
     "OperationLog",
+    "ResumeTemplate",
 ]

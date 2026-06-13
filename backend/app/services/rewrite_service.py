@@ -179,6 +179,8 @@ def full_rewrite(
     file_id: int,
     jd_text: Optional[str] = None,
     style_hint: Optional[str] = None,
+    template_code: str = "classic",
+    style_options: Optional[dict] = None,
 ) -> dict:
     """完整改写:1000 积分(含 JD 1500)"""
     t0 = time.time()
@@ -270,6 +272,7 @@ def full_rewrite(
         title=rf.title,
         with_jd=has_jd,
         jd_text=jd_text,
+        template_code=template_code,
     )
     db.add(gen_file)
     db.flush()
@@ -281,6 +284,7 @@ def full_rewrite(
         source_file_id=rf.id,
         jd_text=jd_text,
         style_hint=style_hint,
+        template_code=template_code,
         generated_file_id=gen_file.id,
         output_text=output_text,
         improvement_points=improvement_points,

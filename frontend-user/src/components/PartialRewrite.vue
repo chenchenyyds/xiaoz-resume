@@ -61,12 +61,14 @@
 import { ref, computed } from 'vue'
 import { showToast } from 'vant'
 import { rewriteApi } from '../api/rewrite'
+import TemplatePicker from './TemplatePicker.vue'
 
 const emit = defineEmits(['close', 'done'])
 
 const title = ref('')
 const text = ref('')
 const styleHint = ref('')
+const templateCode = ref('classic')
 const loading = ref(false)
 const result = ref<any>(null)
 
@@ -75,7 +77,12 @@ const canSubmit = computed(() => text.value.length >= 10)
 async function submit() {
   loading.value = true
   try {
-    const data: any = await rewriteApi.partial(text.value, title.value || undefined, styleHint.value || undefined)
+    const data: any = await rewriteApi.partial(
+      text.value,
+      title.value || undefined,
+      styleHint.value || undefined,
+      templateCode.value
+    )
     result.value = data
   } catch (e) {
     // 错误已处理
