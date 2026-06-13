@@ -41,7 +41,7 @@ jobs:
       - name: 构建后端镜像
         uses: docker/build-push-action@v6
         with:
-          context: ./代码/backend
+          context: ./backend
           push: true
           tags: |
             ${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.version }}
@@ -52,7 +52,7 @@ jobs:
       - name: 构建用户端镜像
         uses: docker/build-push-action@v6
         with:
-          context: ./代码/frontend-user
+          context: ./frontend-user
           push: true
           tags: |
             ${{ env.USER_IMAGE }}:${{ steps.version.outputs.version }}
@@ -63,7 +63,7 @@ jobs:
       - name: 构建后台镜像
         uses: docker/build-push-action@v6
         with:
-          context: ./代码/frontend-admin
+          context: ./frontend-admin
           push: true
           tags: |
             ${{ env.ADMIN_IMAGE }}:${{ steps.version.outputs.version }}
