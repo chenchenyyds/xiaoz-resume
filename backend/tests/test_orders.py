@@ -69,7 +69,7 @@ def test_product_list(db):
 
 def test_create_order(db, user):
     """创建订单应生成 order_no 和 pending 状态"""
-    with patch("app.core.payment.create_order") as mock_pay:
+    with patch("app.services.order_service.hupijiao_create") as mock_pay:
         mock_pay.return_value = {"pay_url": "https://test-pay-url"}
         result = order_service.create_order(db, user.id, "single")
         assert result["order_no"].startswith("XZ")
@@ -84,13 +84,13 @@ def test_create_order(db, user):
 def test_handle_notify_grants_points(db, user):
     """支付回调成功后应加分"""
     # 先创建订单
-    with patch("app.core.payment.create_order") as mock_pay:
+    with patch("app.services.order_service.hupijiao_create") as mock_pay:
         mock_pay.return_value = {"pay_url": "https://test"}
         result = order_service.create_order(db, user.id, "single")
         order_no = result["order_no"]
 
     # 模拟回调
-    with patch("app.core.payment.verify_notify") as mock_verify:
+    with patch("app.services.order_service.verify_notify") as mock_verify:
         mock_verify.return_value = True
         params = {
             "order_no": order_no, "status": "paid",
@@ -113,13 +113,13 @@ def test_handle_notify_grants_points(db, user):
 def test_handle_notify_grants_commission(db, user, inviter):
     """带推广人的订单应给推广人返佣"""
     # 用推广码下单
-    with patch("app.core.payment.create_order") as mock_pay:
+    with patch("app.services.order_service.hupijiao_create") as mock_pay:
         mock_pay.return_value = {"pay_url": "https://test"}
         result = order_service.create_order(db, user.id, "monthly", invite_code=inviter.invite_code)
         order_no = result["order_no"]
 
     # 模拟回调
-    with patch("app.core.payment.verify_notify") as mock_verify:
+    with patch("app.services.order_service.verify_notify") as mock_verify:
         mock_verify.return_value = True
         params = {
             "order_no": order_no, "status": "paid",
@@ -137,12 +137,12 @@ def test_handle_notify_grants_commission(db, user, inviter):
 
 def test_refund_order(db, user):
     """退款应能成功并退积分"""
-    with patch("app.core.payment.create_order") as mock_pay:
+    with patch("app.services.order_service.hupijiao_create") as mock_pay:
         mock_pay.return_value = {"pay_url": "https://test"}
         result = order_service.create_order(db, user.id, "single")
         order_no = result["order_no"]
 
-    with patch("app.core.payment.verify_notify") as mock_verify:
+    with patch("app.services.order_service.verify_notify") as mock_verify:
         mock_verify.return_value = True
         order_service.handle_hupijiao_notify(db, params={"order_no": order_no, "status": "paid", "pay_trade_no": "t1", "amount": "9.9"})
 
