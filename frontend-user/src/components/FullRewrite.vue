@@ -96,6 +96,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { rewriteApi } from '../api/rewrite'
 import { fileApi } from '../api/files'
+import TemplatePicker from './TemplatePicker.vue'
 
 const emit = defineEmits(['close', 'done'])
 const router = useRouter()
@@ -104,6 +105,7 @@ const files = ref<any[]>([])
 const selectedFileId = ref<number | null>(null)
 const jdText = ref('')
 const styleHint = ref('')
+const templateCode = ref('classic')
 const loading = ref(false)
 const result = ref<any>(null)
 
@@ -130,7 +132,8 @@ async function submit() {
     const data: any = await rewriteApi.full(
       selectedFileId.value!,
       jdText.value || undefined,
-      styleHint.value || undefined
+      styleHint.value || undefined,
+      templateCode.value
     )
     result.value = data
   } catch (e) {
