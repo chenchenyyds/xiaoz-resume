@@ -1,0 +1,89 @@
+name: Docker 镜像构建
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*.*.*"]
+  workflow_dispatch:  # 允许手动触发
+
+env:
+  REGISTRY: ccr.ccs.tencentyun.com  # 腾讯云 TCR(可换 DockerHub/阿里云 ACR)
+  IMAGE_PREFIX: xiaoz-resume
+  BACKEND_IMAGE: ${{ env.REGISTRY }}/xiaoz/${{ env.IMAGE_PREFIX }}-backend
+  USER_IMAGE: ${{ env.REGISTRY }}/xiaoz/${{ env.IMAGE_PREFIX }}-frontend-user
+  ADMIN_IMAGE: ${{ env.REGISTRY }}/xiaoz/${{ env.IMAGE_PREFIX }}-frontend-admin
+
+jobs:
+  build-and-push:
+    name: 构建 + 推送镜像
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 登录 TCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.TENCENT_CLOUD_USERNAME }}
+          password: ${{ secrets.TENCENT_CLOUD_PASSWORD }}
+
+      - name: 提取版本号
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION=${GITHUB_SHA::7}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "  版本号:$VERSION"
+
+      - name: 构建后端镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: ./代码/backend
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.version }}
+            ${{ env.BACKEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 构建用户端镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: ./代码/frontend-user
+          push: true
+          tags: |
+            ${{ env.USER_IMAGE }}:${{ steps.version.outputs.version }}
+            ${{ env.USER_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 构建后台镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: ./代码/frontend-admin
+          push: true
+          tags: |
+            ${{ env.ADMIN_IMAGE }}:${{ steps.version.outputs.version }}
+            ${{ env.ADMIN_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: SSH 部署到腾讯云
+        if: github.ref == 'refs/heads/main'
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/xiaoz/代码
+            export VERSION=${{ steps.version.outputs.version }}
+            echo "  ➜ 拉取新镜像并重启"
+            docker compose pull backend frontend-user frontend-admin
+            docker compose up -d
+            echo "  ➜ 健康检查"
+            sleep 10
+            curl -fsS http://localhost:8000/health && echo "  ✓ backend OK" || echo "  ✗ backend fail"

@@ -1,0 +1,143 @@
+# ============================================================
+# 告警规则 - 小Z简历业务监控
+# ============================================================
+
+groups:
+  # ---------- 业务指标 ----------
+  - name: business_alerts
+    interval: 30s
+    rules:
+      # 支付成功率低于 80%
+      - alert: PaymentSuccessRateLow
+        expr: |
+          (
+            sum(rate(xiaoz_orders_paid_total[5m]))
+            /
+            sum(rate(xiaoz_orders_created_total[5m]))
+          ) < 0.8
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "支付成功率低于 80%"
+          description: "5 分钟内支付成功率 {{ $value | humanizePercentage }},请检查虎皮椒接口"
+
+      # 退款率超过 30%(V1 失败信号)
+      - alert: RefundRateHigh
+        expr: |
+          (
+            sum(rate(xiaoz_orders_refunded_total[1h]))
+            /
+            sum(rate(xiaoz_orders_paid_total[1h]))
+          ) > 0.3
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "退款率超过 30%"
+          description: "1 小时退款率 {{ $value | humanizePercentage }},V1 失败信号,需立即排查"
+
+      # LLM 调用失败率超 10%
+      - alert: LLMFailureRateHigh
+        expr: |
+          (
+            sum(rate(xiaoz_llm_calls_failed_total[5m]))
+            /
+            sum(rate(xiaoz_llm_calls_total[5m]))
+          ) > 0.1
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "DeepSeek API 失败率超 10%"
+          description: "请检查 API key 余额和限流"
+
+      # 1 小时无新订单
+      - alert: NoOrders
+        expr: sum(rate(xiaoz_orders_created_total[1h])) == 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "1 小时无新订单"
+          description: "可能流量异常或支付挂掉"
+
+  # ---------- 系统指标 ----------
+  - name: system_alerts
+    interval: 30s
+    rules:
+      # CPU 高
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU 持续 > 80%"
+          description: "{{ $labels.instance }} CPU {{ $value | humanize }}%"
+
+      # 内存高
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "内存使用 > 85%"
+          description: "{{ $labels.instance }} 内存 {{ $value | humanize }}%"
+
+      # 磁盘满
+      - alert: DiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "磁盘使用 > 85%"
+          description: "{{ $labels.instance }} {{ $labels.mountpoint }} {{ $value | humanize }}%"
+
+      # 后端 5xx 错误率
+      - alert: Backend5xxHigh
+        expr: |
+          (
+            sum(rate(http_requests_total{job="xiaoz-backend",status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="xiaoz-backend"}[5m]))
+          ) > 0.05
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "后端 5xx 错误率 > 5%"
+          description: "请立即查看 backend 日志"
+
+      # 后端 P99 延迟 > 3s
+      - alert: BackendSlow
+        expr: |
+          histogram_quantile(0.99, sum by(le) (rate(http_request_duration_seconds_bucket{job="xiaoz-backend"}[5m]))) > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "后端 P99 延迟 > 3s"
+          description: "考虑优化或加机器"
+
+      # 数据库连接用满
+      - alert: DBConnectionsHigh
+        expr: pg_stat_activity_count > 80
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PG 连接数 > 80(满)"
+          description: "可能连接泄漏"
+
+      # Redis 内存高
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis 内存 > 80%"
+          description: "考虑加 maxmemory 策略或扩容"

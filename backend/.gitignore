@@ -1,0 +1,16 @@
+Python 3.11+
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.db
+*.sqlite
+.pytest_cache/
+.idea/
+.vscode/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/

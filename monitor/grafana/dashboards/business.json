@@ -1,0 +1,91 @@
+{
+  "annotations": {"list": []},
+  "title": "小Z简历 - 业务总览",
+  "uid": "xiaoz-business",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {"from": "now-6h", "to": "now"},
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "title": "今日订单数",
+      "type": "stat",
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "increase(xiaoz_orders_created_total[24h])", "refId": "A"}],
+      "fieldConfig": {"defaults": {"color": {"mode": "thresholds"}, "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}}}
+    },
+    {
+      "id": 2,
+      "title": "今日收入(元)",
+      "type": "stat",
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "increase(xiaoz_revenue_total[24h])", "refId": "A"}],
+      "fieldConfig": {"defaults": {"unit": "currency", "currency": "CNY"}}
+    },
+    {
+      "id": 3,
+      "title": "支付成功率",
+      "type": "stat",
+      "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+      "targets": [{
+        "expr": "sum(rate(xiaoz_orders_paid_total[1h])) / sum(rate(xiaoz_orders_created_total[1h]))",
+        "refId": "A"
+      }],
+      "fieldConfig": {"defaults": {"unit": "percentunit", "thresholds": {"mode": "absolute", "steps": [
+        {"color": "red", "value": null}, {"color": "yellow", "value": 0.7}, {"color": "green", "value": 0.9}
+      ]}}}
+    },
+    {
+      "id": 4,
+      "title": "活跃用户(24h)",
+      "type": "stat",
+      "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+      "targets": [{"expr": "increase(xiaoz_user_active_total[24h])", "refId": "A"}]
+    },
+    {
+      "id": 5,
+      "title": "订单/支付趋势",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "rate(xiaoz_orders_created_total[5m])", "refId": "A", "legendFormat": "创建"},
+        {"expr": "rate(xiaoz_orders_paid_total[5m])", "refId": "B", "legendFormat": "支付"},
+        {"expr": "rate(xiaoz_orders_refunded_total[5m])", "refId": "C", "legendFormat": "退款"}
+      ]
+    },
+    {
+      "id": 6,
+      "title": "改写功能使用占比",
+      "type": "piechart",
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+      "targets": [{
+        "expr": "sum by(feature) (increase(xiaoz_rewrite_calls_total[24h]))",
+        "refId": "A", "legendFormat": "{{feature}}"
+      }]
+    },
+    {
+      "id": 7,
+      "title": "LLM 响应时间 P50/P95/P99",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 12, "w": 12, "h": 8},
+      "targets": [
+        {"expr": "histogram_quantile(0.5, sum by(le) (rate(xiaoz_llm_duration_seconds_bucket[5m])))", "refId": "A", "legendFormat": "P50"},
+        {"expr": "histogram_quantile(0.95, sum by(le) (rate(xiaoz_llm_duration_seconds_bucket[5m])))", "refId": "B", "legendFormat": "P95"},
+        {"expr": "histogram_quantile(0.99, sum by(le) (rate(xiaoz_llm_duration_seconds_bucket[5m])))", "refId": "C", "legendFormat": "P99"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "s"}}
+    },
+    {
+      "id": 8,
+      "title": "积分余额分布",
+      "type": "barchart",
+      "gridPos": {"x": 12, "y": 12, "w": 12, "h": 8},
+      "targets": [{
+        "expr": "sum by(point_type) (xiaoz_point_balance_total)",
+        "refId": "A", "legendFormat": "{{point_type}}"
+      }]
+    }
+  ]
+}

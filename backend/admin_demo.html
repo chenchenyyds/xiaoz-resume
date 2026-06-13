@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小Z简历 - 后台管理 (V1 体验版)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f5f7fa; color: #333; }
+  .header { background: #1d2129; color: white; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 18px; }
+  .header a { color: #1989fa; text-decoration: none; font-size: 13px; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab { padding: 8px 16px; background: white; border: 1px solid #e0e0e0; border-radius: 8px; cursor: pointer; font-size: 14px; }
+  .tab.active { background: #1989fa; color: white; border-color: #1989fa; }
+  .card { background: white; border-radius: 12px; padding: 20px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .stat-value { font-size: 28px; color: #1989fa; font-weight: bold; }
+  .stat-label { font-size: 12px; color: #666; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #f5f7fa; padding: 10px; text-align: left; color: #666; font-weight: normal; border-bottom: 1px solid #e0e0e0; }
+  td { padding: 10px; border-bottom: 1px solid #f0f0f0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+  .tag-active { background: #e1f5e8; color: #07c160; }
+  .tag-disabled { background: #f5f5f5; color: #999; }
+  .tag-paid { background: #e1f0ff; color: #1989fa; }
+  .tag-pending { background: #fff7e6; color: #ff976a; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 12px; max-height: 400px; }
+  button { background: #1989fa; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; margin: 2px; }
+  button.secondary { background: #07c160; }
+  button.danger { background: #ee0a24; }
+  input, select { padding: 6px 10px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 13px; }
+  .login-card { max-width: 360px; margin: 80px auto; }
+  .small { font-size: 12px; color: #999; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🛠️ 小Z简历 - 后台管理 (V1 体验版)</h1>
+  <a href="/">← 返回用户端</a>
+</div>
+
+<div id="login-view" class="container">
+  <div class="card login-card">
+    <h2 style="margin-bottom:16px">管理员登录</h2>
+    <p class="small" style="margin-bottom:12px">需要先用手机号登录 <code>13800000000</code> (默认管理员号) + 验证码 <code>123456</code>,然后数据库手动提权为管理员</p>
+    <div style="margin:12px 0">
+      <label class="small">手机号</label>
+      <input id="phone" value="13800000000" style="width:100%;padding:10px;margin-top:4px">
+    </div>
+    <div style="margin:12px 0">
+      <label class="small">验证码</label>
+      <input id="code" value="123456" style="width:100%;padding:10px;margin-top:4px">
+    </div>
+    <button onclick="login()" style="width:100%;padding:12px">登录</button>
+    <pre id="login-msg" style="margin-top:12px;display:none"></pre>
+  </div>
+</div>
+
+<div id="main-view" style="display:none">
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 仪表盘</div>
+      <div class="tab" data-tab="users" onclick="switchTab('users')">👥 用户管理</div>
+      <div class="tab" data-tab="orders" onclick="switchTab('orders')">💰 订单管理</div>
+      <div class="tab" data-tab="codes" onclick="switchTab('codes')">🎫 兑换码</div>
+      <div class="tab" data-tab="points" onclick="switchTab('points')">⭐ 积分流水</div>
+      <div class="tab" data-tab="logs" onclick="switchTab('logs')">📋 操作日志</div>
+    </div>
+    <div id="tab-content"></div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+let TOKEN = localStorage.getItem('admin_token') || '';
+let CURRENT_TAB = 'dashboard';
+
+async function api(path, opts={}) {
+  opts.headers = opts.headers || {};
+  if (TOKEN) opts.headers['Authorization'] = 'Bearer ' + TOKEN;
+  if (opts.body && typeof opts.body === 'object') {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(opts.body);
+  }
+  const r = await fetch(API + path, opts);
+  return r.json();
+}
+
+async function login() {
+  const phone = document.getElementById('phone').value;
+  const code = document.getElementById('code').value;
+  const d = await api('/api/auth/login', {method: 'POST', body: {phone, code}});
+  if (d.code === 0) {
+    TOKEN = d.data.token;
+    localStorage.setItem('admin_token', TOKEN);
+    document.getElementById('login-msg').style.display = 'block';
+    document.getElementById('login-msg').textContent = '✅ 登录成功!\n\n但 V1 体验版限制:此号非管理员,后台接口会 401。\n\n若要看后台全功能,需在数据库手动提权:\ndocker exec -it xiaozjianli-postgres psql ...\nUPDATE users SET is_admin=1 WHERE phone=\'' + phone + '\';\n\n或者用后端的 /admin/* 接口(体验版简化鉴权)';
+    setTimeout(() => {
+      document.getElementById('login-view').style.display = 'none';
+      document.getElementById('main-view').style.display = 'block';
+      switchTab('dashboard');
+    }, 3000);
+  } else {
+    document.getElementById('login-msg').style.display = 'block';
+    document.getElementById('login-msg').textContent = '❌ ' + d.message;
+  }
+}
+
+function switchTab(name) {
+  CURRENT_TAB = name;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  renderTab();
+}
+
+async function renderTab() {
+  const el = document.getElementById('tab-content');
+  el.innerHTML = '<div class="card"><p>⏳ 加载中...</p></div>';
+  if (CURRENT_TAB === 'dashboard') return renderDashboard(el);
+  if (CURRENT_TAB === 'users') return renderUsers(el);
+  if (CURRENT_TAB === 'orders') return renderOrders(el);
+  if (CURRENT_TAB === 'codes') return renderCodes(el);
+  if (CURRENT_TAB === 'points') return renderPoints(el);
+  if (CURRENT_TAB === 'logs') return renderLogs(el);
+}
+
+async function renderDashboard(el) {
+  // 拉 dashboard overview
+  const d = await api('/api/admin/dashboard/overview');
+  const ok = d && (d.code === undefined || d.code === 0);
+  const stats = ok ? (d.data || d) : null;
+  let html = '<div class="stats">';
+  if (stats) {
+    // 兼容多种字段命名
+    const map = {
+      users_total: stats.users_total ?? stats.total_users,
+      orders_total: stats.orders_total ?? stats.total_orders,
+      revenue_total: stats.revenue_total ?? stats.total_revenue,
+      points_total: stats.points_total ?? '-'
+    };
+    for (const [k, v] of Object.entries(map)) {
+      html += `<div class="stat"><div class="stat-value">${v}</div><div class="stat-label">${k}</div></div>`;
+    }
+  } else {
+    html += `<div class="stat"><div class="stat-value">N/A</div><div class="stat-label">需管理员权限</div></div>`;
+  }
+  html += '</div>';
+  html += '<div class="card"><h3>📈 实时数据 (调试输出)</h3>';
+  html += '<pre>' + JSON.stringify(d, null, 2) + '</pre></div>';
+  // 测改写 + 订单
+  html += '<div class="card"><h3>🧪 体验功能</h3>';
+  html += '<p><button class="secondary" onclick="testRewrite()">调用一次 AI 改写 (用主人 key)</button></p>';
+  html += '<pre id="test-out"></pre></div>';
+  el.innerHTML = html;
+}
+
+async function renderUsers(el) {
+  const d = await api('/api/admin/users?page=1&size=20');
+  const ok = d && (d.code === undefined || d.code === 0);
+  const list = ok ? (d.data?.users || d.data?.items || d.users || d.items || []) : [];
+  let html = '<div class="card"><h3>👥 用户列表 (共 ' + (ok ? (d.data?.total ?? d.total ?? list.length) : 0) + ')</h3>';
+  if (list.length) {
+    html += '<table><thead><tr><th>ID</th><th>手机</th><th>昵称</th><th>状态</th><th>邀请码</th><th>注册时间</th></tr></thead><tbody>';
+    for (const u of list) {
+      html += `<tr><td>${u.id}</td><td>${u.phone}</td><td>${u.nickname||'-'}</td><td><span class="tag ${u.status==='active'?'tag-active':'tag-disabled'}">${u.status}</span></td><td><code>${u.invite_code||'-'}</code></td><td class="small">${u.created_at||'-'}</td></tr>`;
+    }
+    html += '</tbody></table>';
+  } else {
+    html += '<p>暂无数据或需要管理员权限。响应: <pre>' + JSON.stringify(d, null, 2) + '</pre></p>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function renderOrders(el) {
+  const d = await api('/api/admin/orders?page=1&size=20');
+  const ok = d && (d.code === undefined || d.code === 0);
+  const list = ok ? (d.data?.orders || d.data?.items || d.orders || d.items || []) : [];
+  let html = '<div class="card"><h3>💰 订单列表 (共 ' + (ok ? (d.data?.total ?? d.total ?? list.length) : 0) + ')</h3>';
+  if (list.length) {
+    html += '<table><thead><tr><th>订单号</th><th>用户</th><th>金额</th><th>状态</th><th>渠道</th><th>时间</th></tr></thead><tbody>';
+    for (const o of list) {
+      html += `<tr><td><code>${o.order_no||o.id}</code></td><td>${o.user_id}</td><td>¥${o.amount}</td><td><span class="tag ${o.status==='paid'?'tag-paid':'tag-pending'}">${o.status}</span></td><td>${o.channel||'-'}</td><td class="small">${o.created_at||'-'}</td></tr>`;
+    }
+    html += '</tbody></table>';
+  } else {
+    html += '<p>暂无订单。<pre>' + JSON.stringify(d, null, 2) + '</pre></p>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function renderCodes(el) {
+  let html = '<div class="card"><h3>🎫 兑换码管理</h3>';
+  html += '<div style="margin:12px 0"><label>生成数量: </label><input id="gen-cnt" value="5" type="number" style="width:80px"> <input id="gen-pts" value="100" type="number" style="width:80px"> 积分/码 <button onclick="genCodes()">生成</button></div>';
+  html += '<pre id="codes-out">点击生成兑换码</pre>';
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function genCodes() {
+  const cnt = document.getElementById('gen-cnt').value;
+  const pts = document.getElementById('gen-pts').value;
+  const d = await api('/api/admin/codes/generate', {method: 'POST', body: {count: parseInt(cnt), points: parseInt(pts), valid_days: 30}});
+  document.getElementById('codes-out').textContent = JSON.stringify(d, null, 2);
+}
+
+async function renderPoints(el) {
+  const d = await api('/api/admin/admin/points/transactions?page=1&size=20');
+  let html = '<div class="card"><h3>⭐ 积分流水</h3>';
+  html += '<pre>' + JSON.stringify(d, null, 2) + '</pre>';
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function renderLogs(el) {
+  const d = await api('/api/admin/admin/logs?page=1&size=20');
+  let html = '<div class="card"><h3>📋 操作日志</h3>';
+  html += '<pre>' + JSON.stringify(d, null, 2) + '</pre>';
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function testRewrite() {
+  const el = document.getElementById('test-out');
+  el.textContent = '⏳ 调 deepseek 中 (5-15s)...';
+  const d = await api('/api/rewrite/partial', {
+    method: 'POST',
+    body: {
+      text: '我是一名5年经验的Java全栈开发工程师,精通Spring Boot,会做前端Vue。',
+      title: '个人简介',
+      style_hint: '突出技术深度'
+    }
+  });
+  el.textContent = JSON.stringify(d, null, 2);
+}
+
+if (TOKEN) {
+  document.getElementById('login-view').style.display = 'none';
+  document.getElementById('main-view').style.display = 'block';
+  switchTab('dashboard');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+name: Frontend Build
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths:
+      - "代码/frontend-user/**"
+      - "代码/frontend-admin/**"
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  build-user:
+    name: 用户端 build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 代码/frontend-user
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: 代码/frontend-user/package-lock.json
+      - run: npm ci || npm install
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-user-dist
+          path: 代码/frontend-user/dist
+          retention-days: 7
+
+  build-admin:
+    name: 后台 build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 代码/frontend-admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: 代码/frontend-admin/package-lock.json
+      - run: npm ci || npm install
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-admin-dist
+          path: 代码/frontend-admin/dist
+          retention-days: 7

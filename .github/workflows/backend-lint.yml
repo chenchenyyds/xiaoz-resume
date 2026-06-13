@@ -1,0 +1,33 @@
+name: Backend Lint
+
+on:
+  push:
+    branches: [main, master, develop]
+    paths:
+      - "代码/backend/**/*.py"
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  lint:
+    name: ruff + black
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 装 ruff + black
+        run: pip install ruff==0.8.4 black==24.10.0
+
+      - name: ruff 检查
+        working-directory: 代码/backend
+        run: |
+          ruff check app/ tests/ scripts/ --output-format=github
+
+      - name: black 格式检查
+        working-directory: 代码/backend
+        run: |
+          black --check --diff app/ tests/ scripts/

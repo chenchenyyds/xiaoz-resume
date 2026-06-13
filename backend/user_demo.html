@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小Z简历 - AI 简历改写 (V1 体验版)</title>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f5f7fa; color: #333; padding: 16px; }
+  .container { max-width: 800px; margin: 0 auto; }
+  h1 { color: #1989fa; text-align: center; margin: 20px 0; font-size: 28px; }
+  h2 { color: #333; margin: 20px 0 12px; font-size: 18px; border-left: 4px solid #1989fa; padding-left: 10px; }
+  .card { background: white; border-radius: 12px; padding: 20px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .form-item { margin: 12px 0; }
+  label { display: block; color: #666; font-size: 14px; margin-bottom: 6px; }
+  input, textarea, select { width: 100%; padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: inherit; }
+  textarea { min-height: 100px; resize: vertical; }
+  button { background: #1989fa; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-size: 15px; cursor: pointer; width: 100%; margin-top: 8px; }
+  button:disabled { background: #ccc; cursor: not-allowed; }
+  button.secondary { background: #07c160; }
+  button.danger { background: #ee0a24; }
+  .result { background: #f0f9ff; border-left: 4px solid #1989fa; padding: 12px; border-radius: 8px; margin-top: 12px; white-space: pre-wrap; }
+  .error { background: #fff1f0; border-left: 4px solid #ee0a24; color: #c41d3a; padding: 12px; border-radius: 8px; margin-top: 12px; }
+  .tag { display: inline-block; padding: 2px 8px; background: #1989fa; color: white; border-radius: 4px; font-size: 12px; margin-right: 4px; }
+  .stats { display: flex; gap: 8px; }
+  .stat { flex: 1; text-align: center; padding: 12px; background: #f0f9ff; border-radius: 8px; }
+  .stat-value { font-size: 24px; color: #1989fa; font-weight: bold; }
+  .stat-label { font-size: 12px; color: #666; margin-top: 4px; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 12px; }
+  .small { font-size: 12px; color: #999; }
+  /* MD 预览样式 */
+  #md-preview h1 { font-size: 22px; color: #1989fa; margin: 12px 0 8px; border-bottom: 2px solid #1989fa; padding-bottom: 6px; }
+  #md-preview h2 { font-size: 18px; color: #333; margin: 16px 0 8px; border-left: 3px solid #1989fa; padding-left: 8px; }
+  #md-preview h3 { font-size: 15px; color: #555; margin: 12px 0 6px; }
+  #md-preview ul { padding-left: 22px; line-height: 1.8; }
+  #md-preview li { margin: 4px 0; }
+  #md-preview p { margin: 6px 0; line-height: 1.7; }
+  #md-preview strong { color: #1989fa; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📄 小Z简历 - AI 简历改写</h1>
+  <p class="small" style="text-align:center;margin-bottom:16px">V1 商业化精简版 · 云电脑本地体验 · 验证码固定 <code>123456</code></p>
+
+  <div id="user-info" class="card" style="display:none">
+    <h2>👤 我的账户</h2>
+    <div class="stats">
+      <div class="stat"><div class="stat-value" id="points">-</div><div class="stat-label">积分余额</div></div>
+      <div class="stat"><div class="stat-value" id="user-id">-</div><div class="stat-label">用户 ID</div></div>
+    </div>
+    <p class="small" style="margin-top:12px">手机: <span id="my-phone"></span> · 邀请码: <code id="my-invite"></code></p>
+    <button class="danger" onclick="logout()">退出登录</button>
+  </div>
+
+  <div id="login-card" class="card">
+    <h2>🔐 手机号登录</h2>
+    <div class="form-item">
+      <label>手机号</label>
+      <input id="phone" type="tel" value="13800000099" placeholder="请输入 11 位手机号">
+    </div>
+    <button onclick="sendSms()">1. 发送验证码</button>
+    <div class="form-item" style="margin-top:12px">
+      <label>验证码 (开发模式固定 123456)</label>
+      <input id="code" type="text" value="123456" placeholder="开发模式固定 123456">
+    </div>
+    <button class="secondary" onclick="login()">2. 登录</button>
+    <div id="login-msg"></div>
+  </div>
+
+  <div id="rewrite-card" class="card" style="display:none">
+    <h2>✨ AI 简历改写 (用你的 DeepSeek key)</h2>
+    <div class="form-item">
+      <label>原文本</label>
+      <textarea id="orig-text">我是一名5年经验的Java全栈开发工程师,精通Spring Boot,会做前端Vue,带过10人小团队。做过电商、金融、政企三个方向的项目。</textarea>
+    </div>
+    <div class="form-item">
+      <label>段落标题</label>
+      <input id="section-title" value="个人简介" placeholder="如:个人简介 / 项目经历 / 工作概述">
+    </div>
+    <div class="form-item">
+      <label>改写风格</label>
+      <select id="style-hint">
+        <option value="">保持原风格</option>
+        <option value="突出技术深度和管理能力">突出技术深度和管理能力</option>
+        <option value="强调业务成果和数据">强调业务成果和数据</option>
+        <option value="简洁专业" selected>简洁专业</option>
+        <option value="适合互联网大厂投递">适合互联网大厂投递</option>
+      </select>
+    </div>
+    <button onclick="doRewrite()">🚀 调用 AI 改写 (消耗 50 积分)</button>
+    <div id="rewrite-result"></div>
+  </div>
+
+  <div id="full-rewrite-card" class="card" style="display:none">
+    <h2>📑 完整改写 (上传简历 → AI 优化 → 预览 → 下载)</h2>
+    <p class="small" style="margin-bottom:12px;color:#999">支持 docx / pdf,消耗 1000 积分(含 JD +500)</p>
+
+    <div class="form-item">
+      <label>1. 选择简历文件 (docx 或 pdf)</label>
+      <input id="resume-file" type="file" accept=".docx,.pdf" style="padding:8px">
+    </div>
+    <div class="form-item">
+      <label>简历标题 (可选)</label>
+      <input id="resume-title" placeholder="如:Java 全栈 - 2026 求职版">
+    </div>
+    <button class="secondary" onclick="uploadResume()">📤 上传简历 (免费,只解析)</button>
+    <div id="upload-result"></div>
+
+    <div class="form-item" style="margin-top:16px">
+      <label>2. 目标 JD (可选,加 500 积分,匹配度更高)</label>
+      <textarea id="jd-text" placeholder="把目标职位的 JD 贴进来,AI 会针对性优化你的简历。如:&#10;岗位职责:&#10;1. 负责订单核心系统开发&#10;2. 主导微服务架构升级&#10;任职要求:&#10;1. 5年以上 Java 经验&#10;2. 熟悉 Spring Cloud、K8s" style="min-height:80px"></textarea>
+    </div>
+    <div class="form-item">
+      <label>改写风格</label>
+      <select id="full-style-hint">
+        <option value="">保持原风格</option>
+        <option value="突出技术深度">突出技术深度</option>
+        <option value="强调业务成果和数据">强调业务成果和数据</option>
+        <option value="简洁专业" selected>简洁专业</option>
+        <option value="适合互联网大厂投递">适合互联网大厂投递</option>
+      </select>
+    </div>
+    <button onclick="doFullRewrite()" id="btn-full-rewrite" disabled>3. 启动 AI 完整改写 (消耗 1000 积分)</button>
+    <div id="full-rewrite-status"></div>
+
+    <div id="full-rewrite-output" style="display:none;margin-top:16px">
+      <h3>📋 MD 预览</h3>
+      <div id="md-preview" style="background:white;padding:16px;border-radius:8px;max-height:400px;overflow:auto;border:1px solid #e0e0e0"></div>
+
+      <h3 style="margin-top:16px">💡 优化点说明</h3>
+      <ul id="improvement-points" style="background:#f0f9ff;padding:12px 32px;border-radius:8px;font-size:14px;line-height:1.8"></ul>
+
+      <h3 style="margin-top:16px">📦 下载结果</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="dl-docx" class="dl-btn" type="button" style="flex:1;background:#1989fa;color:white;padding:12px;border-radius:8px;border:none;font-size:14px;cursor:pointer;font-family:inherit">📄 下载 DOCX</button>
+        <button id="dl-pdf" class="dl-btn" type="button" style="flex:1;background:#ee0a24;color:white;padding:12px;border-radius:8px;border:none;font-size:14px;cursor:pointer;font-family:inherit">📕 下载 PDF</button>
+      </div>
+      <p class="small" style="margin-top:8px;color:#999">提示:点击触发浏览器下载,文件自动命名</p>
+    </div>
+  </div>
+
+  <div id="api-debug" class="card">
+    <h2>🔧 API 调试</h2>
+    <button class="secondary" onclick="apiHealth()">测试 /health</button>
+    <button class="secondary" onclick="apiProducts()" style="margin-top:6px">测试 /api/products</button>
+    <button class="secondary" onclick="apiBalance()" style="margin-top:6px">测试 /api/withdraw/balance (需要登录)</button>
+    <pre id="api-debug-out" style="margin-top:12px;min-height:80px">点击按钮测试 API</pre>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;  // backend tunnel URL
+let TOKEN = localStorage.getItem('token') || '';
+let USER = {};
+try { USER = JSON.parse(localStorage.getItem('user') || '{}'); } catch (e) { USER = {}; localStorage.removeItem('user'); }
+
+function setMsg(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = type;
+  el.textContent = msg;
+}
+
+// 启动时:若有 token,自动恢复登录态
+if (TOKEN) {
+  document.getElementById('login-card').style.display = 'none';
+  document.getElementById('user-info').style.display = 'block';
+  document.getElementById('rewrite-card').style.display = 'block';
+  document.getElementById('my-phone').textContent = USER.user_id || '已登录';
+  loadUserInfo();
+}
+
+async function sendSms() {
+  const phone = document.getElementById('phone').value;
+  const r = await fetch(API + '/api/auth/send-sms', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({phone, purpose: 'login'})
+  });
+  const d = await r.json();
+  setMsg('login-msg', 'result', '验证码已发(开发模式): ' + JSON.stringify(d));
+}
+
+async function login() {
+  const phone = document.getElementById('phone').value;
+  const code = document.getElementById('code').value;
+  const r = await fetch(API + '/api/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({phone, code})
+  });
+  const d = await r.json();
+  if (d.code === 0) {
+    TOKEN = d.data.token;
+    USER = d.data;
+    localStorage.setItem('token', TOKEN);
+    localStorage.setItem('user', JSON.stringify(USER));
+    setMsg('login-msg', 'result', '✅ 登录成功! 邀请码: ' + USER.invite_code);
+    showLoggedIn();
+  } else {
+    setMsg('login-msg', 'error', '❌ ' + d.message);
+  }
+}
+
+function showLoggedIn() {
+  document.getElementById('user-info').style.display = 'block';
+  document.getElementById('rewrite-card').style.display = 'block';
+  document.getElementById('full-rewrite-card').style.display = 'block';
+  document.getElementById('my-phone').textContent = USER.user_id;
+  loadUserInfo();
+}
+
+async function loadUserInfo() {
+  const r = await fetch(API + '/api/user/me', {headers: {'Authorization': 'Bearer ' + TOKEN}});
+  const d = await r.json();
+  if (d.user) {
+    document.getElementById('my-phone').textContent = d.user.phone;
+    document.getElementById('user-id').textContent = d.user.id;
+    document.getElementById('my-invite').textContent = d.user.invite_code || 'N/A';
+  }
+  const r2 = await fetch(API + '/api/withdraw/balance', {headers: {'Authorization': 'Bearer ' + TOKEN}});
+  const d2 = await r2.json();
+  if (d2.data) {
+    document.getElementById('points').textContent = d2.data.points_available ?? d2.data.balance ?? 0;
+  }
+}
+
+function logout() {
+  TOKEN = '';
+  USER = {};
+  localStorage.clear();
+  document.getElementById('user-info').style.display = 'none';
+  document.getElementById('rewrite-card').style.display = 'none';
+  document.getElementById('full-rewrite-card').style.display = 'none';
+  uploadedFileId = null;
+  document.getElementById('btn-full-rewrite').disabled = true;
+}
+
+async function doRewrite() {
+  const text = document.getElementById('orig-text').value;
+  const title = document.getElementById('section-title').value;
+  const style = document.getElementById('style-hint').value;
+  const el = document.getElementById('rewrite-result');
+  el.className = 'result';
+  el.textContent = '⏳ 调 DeepSeek 中 (5-15 秒)...';
+  const r = await fetch(API + '/api/rewrite/partial', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN},
+    body: JSON.stringify({text, title, style_hint: style || null})
+  });
+  const d = await r.json();
+  // 后端统一包装: {code:0, message:"ok", data:{output_text, ...}}
+  if (d.code === 0 && d.data) {
+    const data = d.data;
+    el.className = 'result';
+    el.innerHTML = '✅ <b>改写结果</b>:\n\n' + data.output_text + '\n\n💡 <b>AI 解释</b>: ' + data.explanation + '\n\n💰 消耗 ' + data.points_cost + ' 积分, 剩余 ' + data.points_remaining;
+    loadUserInfo();
+  } else {
+    el.className = 'error';
+    el.textContent = '❌ 错误: ' + (d.message || JSON.stringify(d));
+  }
+}
+
+async function apiHealth() {
+  const r = await fetch(API + '/health');
+  document.getElementById('api-debug-out').textContent = 'GET /health\n' + JSON.stringify(await r.json(), null, 2);
+}
+async function apiProducts() {
+  const r = await fetch(API + '/api/products');
+  const d = await r.json();
+  document.getElementById('api-debug-out').textContent = 'GET /api/products\n' + JSON.stringify(d, null, 2);
+}
+async function apiBalance() {
+  if (!TOKEN) { document.getElementById('api-debug-out').textContent = '请先登录'; return; }
+  const r = await fetch(API + '/api/withdraw/balance', {headers: {'Authorization': 'Bearer ' + TOKEN}});
+  document.getElementById('api-debug-out').textContent = 'GET /api/withdraw/balance\n' + JSON.stringify(await r.json(), null, 2);
+}
+
+// =====================================================
+// 完整改写 - 上传简历 + AI 优化 + MD 预览 + DOCX/PDF 下载
+// =====================================================
+let uploadedFileId = null;
+
+async function downloadFile(fileId, format, ext) {
+  try {
+    const r = await fetch(API + '/api/files/' + fileId + '/download?format=' + format, {
+      headers: {'Authorization': 'Bearer ' + TOKEN}
+    });
+    if (!r.ok) {
+      const t = await r.text();
+      alert('下载失败: ' + t);
+      return;
+    }
+    // 从响应头拿文件名
+    const dispo = r.headers.get('Content-Disposition') || '';
+    const m = dispo.match(/filename="([^"]+)"/);
+    const filename = m ? m[1] : ('resume_' + fileId + '.' + ext);
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  } catch (e) {
+    alert('下载出错: ' + e.message);
+  }
+}
+
+async function uploadResume() {
+  const fileInput = document.getElementById('resume-file');
+  const title = document.getElementById('resume-title').value;
+  const el = document.getElementById('upload-result');
+  if (!fileInput.files || !fileInput.files[0]) {
+    el.className = 'error';
+    el.textContent = '❌ 请先选择文件';
+    return;
+  }
+  const file = fileInput.files[0];
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (!['docx', 'pdf'].includes(ext)) {
+    el.className = 'error';
+    el.textContent = '❌ 仅支持 docx / pdf 格式,当前: ' + ext;
+    return;
+  }
+  el.className = 'result';
+  el.textContent = '⏳ 上传并解析中...';
+  const fd = new FormData();
+  fd.append('file', file);
+  if (title) fd.append('title', title);
+  try {
+    const r = await fetch(API + '/api/files/upload', {
+      method: 'POST',
+      headers: {'Authorization': 'Bearer ' + TOKEN},
+      body: fd
+    });
+    const d = await r.json();
+    if (d.code === 0 && d.data) {
+      uploadedFileId = d.data.id;
+      el.className = 'result';
+      el.innerHTML = '✅ 上传成功! file_id=<b>' + d.data.id + '</b>, 解析字符数=<b>' + d.data.text_preview.length + '+</b><br>📄 预览: ' + d.data.text_preview.substring(0, 150) + '...';
+      document.getElementById('btn-full-rewrite').disabled = false;
+    } else {
+      el.className = 'error';
+      el.textContent = '❌ 上传失败: ' + (d.message || JSON.stringify(d));
+    }
+  } catch (e) {
+    el.className = 'error';
+    el.textContent = '❌ 网络错误: ' + e.message;
+  }
+}
+
+async function doFullRewrite() {
+  if (!uploadedFileId) {
+    document.getElementById('full-rewrite-status').className = 'error';
+    document.getElementById('full-rewrite-status').textContent = '❌ 请先上传简历';
+    return;
+  }
+  const jd = document.getElementById('jd-text').value.trim();
+  const style = document.getElementById('full-style-hint').value;
+  const status = document.getElementById('full-rewrite-status');
+  status.className = 'result';
+  const hasJd = jd.length > 0;
+  status.textContent = '⏳ AI 改写中 (10-20 秒)... 消耗 ' + (hasJd ? 1500 : 1000) + ' 积分';
+  document.getElementById('btn-full-rewrite').disabled = true;
+  try {
+    const r = await fetch(API + '/api/rewrite/full', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN},
+      body: JSON.stringify({
+        file_id: uploadedFileId,
+        jd_text: jd || null,
+        style_hint: style || null
+      })
+    });
+    const d = await r.json();
+    if (d.code === 0 && d.data) {
+      const data = d.data;
+      status.className = 'result';
+      status.innerHTML = '✅ 改写完成! 消耗 <b>' + data.points_cost + '</b> 积分, 剩余 <b>' + data.points_remaining + '</b>';
+
+      // 渲染 MD
+      document.getElementById('md-preview').innerHTML = marked.parse(data.output_text || '');
+
+      // 优化点
+      const ul = document.getElementById('improvement-points');
+      ul.innerHTML = '';
+      (data.improvement_points || []).forEach(p => {
+        const li = document.createElement('li');
+        li.textContent = p;
+        ul.appendChild(li);
+      });
+
+      // 下载链接:用 fetch + blob(走 Authorization header,安全)
+      const dlDocx = document.getElementById('dl-docx');
+      const dlPdf = document.getElementById('dl-pdf');
+      dlDocx.onclick = (e) => { e.preventDefault(); downloadFile(data.file_id, 'docx', 'docx'); };
+      dlPdf.onclick = (e) => { e.preventDefault(); downloadFile(data.file_id, 'pdf', 'pdf'); };
+
+      document.getElementById('full-rewrite-output').style.display = 'block';
+      loadUserInfo();
+    } else {
+      status.className = 'error';
+      status.textContent = '❌ 改写失败: ' + (d.message || JSON.stringify(d));
+    }
+  } catch (e) {
+    status.className = 'error';
+    status.textContent = '❌ 网络错误: ' + e.message;
+  } finally {
+    document.getElementById('btn-full-rewrite').disabled = false;
+  }
+}
+
+// 自动登录
+if (TOKEN) showLoggedIn();
+</script>
+</body>
+</html>

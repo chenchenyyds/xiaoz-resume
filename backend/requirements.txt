@@ -1,0 +1,54 @@
+# FastAPI 一把梭
+fastapi==0.115.5
+uvicorn[standard]==0.32.0
+pydantic==2.10.3
+pydantic-settings==2.7.0
+python-multipart==0.0.19
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# 数据库
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
+alembic==1.14.0
+
+# 缓存
+redis==5.2.0
+
+# HTTP 客户端（虎皮椒、OSS、短信）
+httpx==0.28.1
+requests==2.32.3
+
+# 文件解析(docx + pdf)
+python-docx==1.1.2
+mammoth==1.8.0
+pypdf==6.9.2
+markdown==3.10.2
+
+# PDF 生成(纯 Python,内置 CID 字体,无需系统库)
+reportlab==4.4.10
+fpdf2==2.8.7
+
+# 阿里云
+oss2==2.18.4
+aliyun-python-sdk-core==2.16.0
+aliyun-python-sdk-dysmsapi==2.1.2
+
+# 工具
+python-dotenv==1.0.1
+loguru==0.7.3
+shortuuid==1.0.13
+pytz==2024.2
+
+# 测试
+pytest==8.3.4
+pytest-asyncio==0.24.0
+
+# LLM (DeepSeek 兼容 OpenAI SDK)
+openai==1.59.6
+
+# 注:Prometheus 客户端本来就在 requirements 里(prometheus-client 随 fastapi 间接依赖)
+prometheus-client==0.21.1
+
+# Sentry(可选错误监控)
+sentry-sdk[fastapi]==2.18.0

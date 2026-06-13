@@ -1,0 +1,107 @@
+# ============================================================
+# 小Z简历 - .gitignore
+# ============================================================
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+backend/.venv/
+
+# 测试/覆盖率
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+
+# 类型检查
+.mypy_cache/
+.ruff_cache/
+
+# 日志
+*.log
+logs/
+backend/logs/
+
+# 临时
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# ---------- Node ----------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 前端构建产物
+frontend-user/dist/
+frontend-admin/dist/
+frontend-user/.vite/
+frontend-admin/.vite/
+
+# ---------- 环境变量 / 密钥 ----------
+# ⚠️ 绝不能入库
+.env
+.env.local
+.env.*.local
+.env.production
+backend/.env
+backend/.env.local
+frontend-user/.env
+frontend-user/.env.local
+frontend-admin/.env
+frontend-admin/.env.local
+
+# ---------- IDE ----------
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# ---------- Docker ----------
+# 注意:docker-compose.yml 本身入库,但运行时数据不入库
+docker-compose.override.yml
+
+# ---------- 数据库 ----------
+# 本地 PG 数据(如果直接用 docker volume mount)
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# ---------- 上传文件(本地开发) ----------
+uploads/
+backend/uploads/
+tmp/
+
+# ---------- 备份 ----------
+*.sql.gz
+backups/
+
+# ---------- Alembic ----------
+# 迁移文件入库,但 alembic 的临时编译产物不入库
+alembic/versions/__pycache__/

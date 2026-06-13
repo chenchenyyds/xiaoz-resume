@@ -1,0 +1,126 @@
+# ============================================================
+# 飞书告警 Webhook 配置 - 小Z简历
+# ============================================================
+# 用途:Alertmanager 推送告警到飞书机器人
+#
+# 部署方式:
+#   1. 复制本文件为 feishu_webhook.yml
+#   2. 填入真实的 webhook URL / secret
+#   3. 在 alertmanager.yml 的 receivers 中引用
+# ============================================================
+
+# ---------- 飞书机器人 webhook URL ----------
+# 在飞书群 → 设置 → 群机器人 → 添加机器人 → 自定义机器人 获得
+# 示例:https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+feishu_webhook_url: "https://open.feishu.cn/open-apis/bot/v2/hook/<FEISHU_BOT_TOKEN>"
+
+# ---------- 签名校验密钥 ----------
+# 飞书机器人"加签"模式下需要,长度任意
+feishu_secret: "<FEISHU_BOT_SECRET>"
+
+# ---------- 告警@人 ----------
+# 配置后,告警会 @ 以下用户
+# - all: @所有人
+# - user_id: 飞书 open_id
+at_user_ids:
+  - "ou_xxxxxxxxxxxxxxxxxxxxxxxx"  # 主人
+  - "ou_xxxxxxxxxxxxxxxxxxxxxxxx"  # 备用运维
+
+# ---------- 告警@所有人 ----------
+at_all: false  # 谨慎使用,会打扰非值班人员
+
+# ---------- 告警接收群配置 ----------
+groups:
+  # 业务告警群
+  - name: "business"
+    webhook_url: "https://open.feishu.cn/open-apis/bot/v2/hook/<FEISHU_BIZ_BOT_TOKEN>"
+    at_all: false
+    at_user_ids:
+      - "ou_xxxxxxxxxxxxxxxxxxxxxxxx"
+    severity_filter:
+      - "critical"
+      - "warning"
+    category_filter:
+      - "business"
+      - "payment"
+
+  # 运维告警群
+  - name: "ops"
+    webhook_url: "https://open.feishu.cn/open-apis/bot/v2/hook/<FEISHU_OPS_BOT_TOKEN>"
+    at_all: true
+    severity_filter:
+      - "critical"
+      - "warning"
+    category_filter:
+      - "infra"
+      - "database"
+      - "cache"
+      - "network"
+
+# ---------- 消息模板 ----------
+templates:
+  # 默认告警卡片
+  default:
+    msg_type: "interactive"
+    card:
+      header:
+        title:
+          tag: "plain_text"
+          content: "{{ status_emoji }} {{ alertname }}"
+        template: "{{ status_color }}"  # red/yellow/blue/green
+      elements:
+        - tag: "div"
+          fields:
+            - is_short: true
+              text:
+                tag: "lark_md"
+                content: "**服务**\n{{ service }}"
+            - is_short: true
+              text:
+                tag: "lark_md"
+                content: "**严重度**\n{{ severity }}"
+            - is_short: true
+              text:
+                tag: "lark_md"
+                content: "**实例**\n{{ instance }}"
+            - is_short: true
+              text:
+                tag: "lark_md"
+                content: "**触发时间**\n{{ starts_at }}"
+        - tag: "div"
+          text:
+            tag: "lark_md"
+            content: "**摘要**\n{{ summary }}"
+        - tag: "div"
+          text:
+            tag: "lark_md"
+            content: "**详情**\n{{ description }}"
+        - tag: "action"
+          actions:
+            - tag: "button"
+              text:
+                tag: "plain_text"
+                content: "查看 Grafana"
+              type: "primary"
+              url: "{{ grafana_url }}"
+            - tag: "button"
+              text:
+                tag: "plain_text"
+                content: "查看 PromQL"
+              type: "default"
+              url: "{{ prometheus_url }}"
+
+# ---------- 状态颜色映射 ----------
+status_colors:
+  firing: "red"
+  resolved: "green"
+
+severity_colors:
+  critical: "red"
+  warning: "yellow"
+  info: "blue"
+
+# ---------- 状态 emoji ----------
+status_emojis:
+  firing: "🔴"
+  resolved: "✅"

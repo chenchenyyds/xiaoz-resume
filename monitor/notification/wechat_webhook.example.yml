@@ -1,0 +1,129 @@
+# ============================================================
+# 企业微信告警 Webhook 配置 - 小Z简历
+# ============================================================
+# 用途:Alertmanager 通过企业微信应用发送告警
+# 适用:critical 级别,需要@特定值班人
+#
+# 部署方式:
+#   1. 在企业微信后台创建"自建应用"(应用 → 自建 → 创建应用)
+#   2. 记录 AgentId 和 Secret
+#   3. 应用 → 可见范围 → 选部门
+#   4. 填入下方配置
+# ============================================================
+
+# ---------- 企业微信基础配置 ----------
+corp_id: "ww_xxxxxxxxxxxxxxxx"          # 我的企业 → CorpID
+agent_id: "1000002"                      # 应用 → AgentId
+api_secret: "<WXWORK_API_SECRET>"        # 应用 → Secret
+
+# ---------- 接收人 ----------
+# 方式 1: @所有人
+#   to_user: "@all"
+# 方式 2: @指定用户(企业内 userid)
+#   to_user: "zhangsan|lisi"
+# 方式 3: @指定部门
+#   to_party: "2|3"
+to_user: "@all"
+to_party: ""
+
+# ---------- 消息类型 ----------
+# text: 文本
+# markdown: Markdown(支持加粗、链接、换行)
+# textcard: 文本卡片
+msg_type: "markdown"
+
+# ---------- 告警接收配置 ----------
+groups:
+  # 紧急告警(全公司+@主值班人)
+  - name: "critical-oncall"
+    corp_id: "ww_xxxxxxxxxxxxxxxx"
+    agent_id: "1000002"
+    api_secret: "<WXWORK_API_SECRET>"
+    to_user: "xiaoz|oncall_user_1"
+    msg_type: "markdown"
+    severity_filter:
+      - "critical"
+
+  # 业务告警(业务群)
+  - name: "business"
+    corp_id: "ww_xxxxxxxxxxxxxxxx"
+    agent_id: "1000003"
+    api_secret: "<WXWORK_BIZ_SECRET>"
+    to_party: "5"  # 业务部
+    msg_type: "markdown"
+    severity_filter:
+      - "warning"
+      - "critical"
+    category_filter:
+      - "business"
+      - "payment"
+
+  # 运维告警(运维部)
+  - name: "ops"
+    corp_id: "ww_xxxxxxxxxxxxxxxx"
+    agent_id: "1000004"
+    api_secret: "<WXWORK_OPS_SECRET>"
+    to_party: "6"  # 运维部
+    msg_type: "markdown"
+    severity_filter:
+      - "warning"
+      - "critical"
+    category_filter:
+      - "infra"
+      - "database"
+
+# ---------- 消息模板 ----------
+templates:
+  # Markdown 模板
+  markdown:
+    content: |
+      # {{ status_emoji }} {{ alertname }}
+
+      **服务**: {{ service }}
+      **严重度**: <font color="{{ severity_color }}"> {{ severity }} </font>
+      **实例**: {{ instance }}
+      **触发时间**: {{ starts_at }}
+
+      ## 📋 摘要
+      {{ summary }}
+
+      ## 📝 详情
+      {{ description }}
+
+      ## 🔗 相关链接
+      - [Grafana 面板]({{ grafana_url }})
+      - [Prometheus 查询]({{ prometheus_url }})
+      - [运维手册]({{ runbook_url }})
+
+      {{#if is_resolved}}
+      ---
+      ✅ **已恢复**,持续时间: {{ duration }}
+      {{/if}}
+
+# ---------- 严重度颜色映射 ----------
+severity_colors:
+  critical: "warning"   # 微信 Markdown 红色(实际是 warning 标签)
+  warning: "comment"
+  info: "info"
+
+# ---------- 状态 emoji ----------
+status_emojis:
+  firing: "🔴"
+  resolved: "✅"
+
+# ---------- 频率限制 ----------
+# 企业微信 API 限制:每个应用 200 次/分钟,10000 次/天
+rate_limit:
+  per_minute: 200
+  per_day: 10000
+
+# ---------- 静默时段 ----------
+# 非工作时间的 warning 级别不推送(避免打扰)
+mute_periods:
+  - weekdays: ['saturday', 'sunday']
+    apply_severity: ['warning', 'info']
+  - times:
+      - start_time: '22:00'
+        end_time: '08:00'
+    location: 'Asia/Shanghai'
+    apply_severity: ['warning', 'info']

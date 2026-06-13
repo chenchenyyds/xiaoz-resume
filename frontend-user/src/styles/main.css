@@ -1,0 +1,69 @@
+:root {
+  --xz-primary: #1989fa;
+  --xz-bg: #f7f8fa;
+  --xz-card: #ffffff;
+  --xz-text: #323233;
+  --xz-text-secondary: #646566;
+  --xz-text-placeholder: #969799;
+  --xz-border: #ebedf0;
+  --xz-success: #07c160;
+  --xz-warning: #ff976a;
+  --xz-danger: #ee0a24;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  font-size: 14px;
+  color: var(--xz-text);
+  background: var(--xz-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  max-width: 640px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--xz-bg);
+}
+
+.page {
+  padding: 12px 16px 80px;
+}
+
+.card {
+  background: var(--xz-card);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.text-secondary { color: var(--xz-text-secondary); }
+.text-placeholder { color: var(--xz-text-placeholder); }
+.text-success { color: var(--xz-success); }
+.text-danger { color: var(--xz-danger); }
+.text-primary { color: var(--xz-primary); }
+
+.flex { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.flex-center { display: flex; justify-content: center; align-items: center; }
+.flex-col { display: flex; flex-direction: column; }
+
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-12 { margin-bottom: 12px; }
+
+/* Vant 主题微调 */
+:root:root {
+  --van-primary-color: var(--xz-primary);
+  --van-background-2: var(--xz-card);
+}

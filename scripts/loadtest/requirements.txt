@@ -1,0 +1,6 @@
+# 压测依赖
+locust==2.31.5
+gevent==23.9.1
+geventhttpclient==2.0.9
+requests==2.31.0
+pyzmq==25.1.2

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  小Z简历 - 邀请好友海报 (800x1200,竖版更适合朋友圈)
+  强调:邀请好友得积分 + 25% 返佣
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1200" width="800" height="1200">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#FF8A65;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFB74D;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="1200" fill="url(#bg2)"/>
+
+  <!-- 装饰 -->
+  <circle cx="700" cy="100" r="200" fill="white" opacity="0.1"/>
+  <circle cx="100" cy="900" r="250" fill="white" opacity="0.08"/>
+
+  <!-- 顶部 -->
+  <text x="400" y="100" text-anchor="middle" fill="white" font-family="-apple-system, sans-serif" font-size="26" font-weight="600" opacity="0.9">📄 小Z简历 · 邀请有礼</text>
+
+  <!-- 主标题 -->
+  <text x="400" y="250" text-anchor="middle" fill="white" font-family="-apple-system, sans-serif" font-size="80" font-weight="900" letter-spacing="-2">邀请 1 个好友</text>
+  <text x="400" y="350" text-anchor="middle" fill="white" font-family="-apple-system, sans-serif" font-size="60" font-weight="700">最高得</text>
+
+  <!-- 大数字 -->
+  <text x="400" y="500" text-anchor="middle" fill="white" font-family="-apple-system, sans-serif" font-size="160" font-weight="900" letter-spacing="-4">725</text>
+  <text x="400" y="555" text-anchor="middle" fill="white" font-family="-apple-system, sans-serif" font-size="32" font-weight="600">积分 / 月卡订单</text>
+
+  <!-- 三档奖励 -->
+  <g transform="translate(100, 620)">
+    <rect width="600" height="80" rx="40" fill="white" opacity="0.95"/>
+    <text x="50" y="50" fill="#FF6B35" font-family="-apple-system, sans-serif" font-size="40" font-weight="900">🎁</text>
+    <text x="110" y="35" fill="#333" font-family="-apple-system, sans-serif" font-size="22" font-weight="600">月卡成交 29 元</text>
+    <text x="110" y="65" fill="#666" font-family="-apple-system, sans-serif" font-size="18">得 725 积分 + 好友 200 积分</text>
+  </g>
+  <g transform="translate(100, 720)">
+    <rect width="600" height="80" rx="40" fill="white" opacity="0.95"/>
+    <text x="50" y="50" fill="#FF6B35" font-family="-apple-system, sans-serif" font-size="40" font-weight="900">📦</text>
+    <text x="110" y="35" fill="#333" font-family="-apple-system, sans-serif" font-size="22" font-weight="600">次卡成交 9.9 元</text>
+    <text x="110" y="65" fill="#666" font-family="-apple-system, sans-serif" font-size="18">得 198 积分 + 好友 200 积分</text>
+  </g>
+  <g transform="translate(100, 820)">
+    <rect width="600" height="80" rx="40" fill="white" opacity="0.95"/>
+    <text x="50" y="50" fill="#FF6B35" font-family="-apple-system, sans-serif" font-size="40" font-weight="900">💎</text>
+    <text x="110" y="35" fill="#333" font-family="-apple-system, sans-serif" font-size="22" font-weight="600">增购 1000 积分</text>
+    <text x="110" y="65" fill="#666" font-family="-apple-system, sans-serif" font-size="18">得 50 积分(永久有效)</text>
+  </g>
+
+  <!-- CTA -->
+  <g transform="translate(150, 960)">
+    <rect width="500" height="100" rx="50" fill="white"/>
+    <text x="250" y="65" text-anchor="middle" fill="#FF6B35" font-family="-apple-system, sans-serif" font-size="36" font-weight="800">扫码立即加入 →</text>
+  </g>
+
+  <!-- 底部说明 -->
+  <text x="400" y="1110" text-anchor="middle" fill="white" font-family="-apple-system, sans-serif" font-size="20" opacity="0.9">积分可累计,提现需 100 起</text>
+  <text x="400" y="1145" text-anchor="middle" fill="white" font-family="-apple-system, sans-serif" font-size="18" opacity="0.7">合规、透明、自动到账</text>
+</svg>

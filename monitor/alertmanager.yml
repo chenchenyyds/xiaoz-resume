@@ -1,0 +1,242 @@
+# ============================================================
+# Alertmanager 配置 - 小Z简历
+# ============================================================
+# 功能:
+#   1. 按严重度(critical/warning/info)分级路由
+#   2. critical → 电话 + 企微(7×24 立即)
+#   3. warning → 飞书群机器人(工作时间 5min 内)
+#   4. info → 邮件汇总(每天 09:00)
+#   5. 分组:同 alertname 5min 内合并,减少噪音
+#   6. 抑制:service_down 抑制该 service 的所有 warning
+#   7. 静默:工作时间外的 warning 静默
+# ============================================================
+
+global:
+  resolve_timeout: 5m
+
+  # SMTP 邮件配置
+  smtp_smarthost: 'smtp.exmail.qq.com:465'
+  smtp_from: 'alerts@xiaoz-jl.com'
+  smtp_auth_username: 'alerts@xiaoz-jl.com'
+  smtp_auth_password: '<SMTP_PASSWORD>'  # 从环境变量注入
+  smtp_require_tls: false
+
+  # 模板路径
+  templates:
+    - '/etc/alertmanager/templates/*.tmpl'
+
+# ============================================================
+# 抑制规则(Inhibit Rules)
+# 高级别告警触发时,抑制低级别同源告警
+# ============================================================
+inhibit_rules:
+  # 服务宕机时,抑制该服务的所有 warning
+  - source_matchers:
+      - alertname="ServiceDown"
+      severity="critical"
+    target_matchers:
+      - severity="warning"
+    equal: ['service', 'instance']
+
+  # 磁盘/内存 critical 时,抑制 low 告警
+  - source_matchers:
+      - severity="critical"
+      alertname=~"DiskSpaceLow|HighMemoryUsage"
+    target_matchers:
+      - severity="warning"
+    equal: ['instance']
+
+  # 支付成功率低时,抑制无订单告警(同根因)
+  - source_matchers:
+      - alertname="PaymentSuccessRateLow"
+      severity="critical"
+    target_matchers:
+      - alertname="NoOrders"
+      severity="warning"
+
+# ============================================================
+# 路由树(Routes)
+# ============================================================
+route:
+  receiver: 'default'           # 默认接收器
+  group_by: ['alertname', 'service', 'severity']
+  group_wait: 30s               # 首次告警等待 30s(等更多同组)
+  group_interval: 5m            # 同组告警 5min 合并
+  repeat_interval: 4h           # 重复告警间隔 4h
+  routes:
+
+    # ---------- 1. critical: 立即电话 + 企微 ----------
+    - matchers:
+        - severity="critical"
+      receiver: 'critical-oncall'
+      group_wait: 10s           # critical 不等,立即发
+      group_interval: 2m
+      repeat_interval: 1h       # 1h 内重复
+      continue: false           # 不再向下匹配
+      routes:
+        # 特别紧急:支付失败 → 短信
+        - matchers:
+            - alertname=~"PaymentSuccessRateLow|HupijiaoAPIError"
+          receiver: 'critical-sms'
+          group_wait: 5s
+          repeat_interval: 30m
+
+    # ---------- 2. warning: 飞书 + 邮件 ----------
+    - matchers:
+        - severity="warning"
+      receiver: 'warning-feishu'
+      group_wait: 2m             # 凑一波再发
+      group_interval: 10m
+      repeat_interval: 12h       # 半天重复
+      continue: false
+      routes:
+        # 业务告警 → 飞书业务群
+        - matchers:
+            - category="business"
+          receiver: 'warning-feishu-business'
+          group_by: ['alertname', 'product_code']
+
+        # 系统告警 → 飞书运维群
+        - matchers:
+            - category="infra"
+          receiver: 'warning-feishu-ops'
+
+    # ---------- 3. info: 仅邮件汇总 ----------
+    - matchers:
+        - severity="info"
+      receiver: 'info-email'
+      group_wait: 30m
+      group_interval: 1h
+      repeat_interval: 24h
+      continue: false
+
+# ============================================================
+# 接收器(Receivers)
+# ============================================================
+receivers:
+
+  # ----- 默认 fallback -----
+  - name: 'default'
+    webhook_configs:
+      - url: 'http://localhost:5001/default'
+        send_resolved: true
+
+  # ----- critical: 立即电话 + 企微 -----
+  - name: 'critical-oncall'
+    # 企微(企业微信)机器人
+    wechat_configs:
+      - corp_id: '<WXWORK_CORP_ID>'
+        agent_id: '<WXWORK_AGENT_ID>'
+        api_secret: '<WXWORK_API_SECRET>'
+        to_user: '@all'
+        message: |
+          🔴【紧急告警】{{ .GroupLabels.alertname }}
+          服务: {{ .GroupLabels.service }}
+          实例: {{ .CommonLabels.instance }}
+          描述: {{ .CommonAnnotations.description }}
+          时间: {{ .CommonAnnotations.timestamp }}
+          链接: {{ .CommonAnnotations.runbook_url }}
+        send_resolved: true
+    # 同步推送到 PagerDuty / 自建 oncall
+    pagerduty_configs:
+      - routing_key: '<PAGERDUTY_ROUTING_KEY>'
+        description: '{{ .CommonAnnotations.summary }}'
+        severity: 'critical'
+        send_resolved: true
+    # Webhook 触发电话
+    webhook_configs:
+      - url: 'http://oncall.xiaoz-internal:8080/alert/phone'
+        send_resolved: true
+        max_alerts: 0
+    email_configs:
+      - to: 'oncall@xiaoz-jl.com'
+        send_resolved: true
+        headers:
+          Subject: '🔴 [CRITICAL] {{ .GroupLabels.alertname }}'
+
+  # ----- critical-sms: 短信(最紧急场景) -----
+  - name: 'critical-sms'
+    webhook_configs:
+      - url: 'http://sms-gateway.xiaoz-internal:8080/alert/sms'
+        send_resolved: false
+        max_alerts: 0
+    wechat_configs:
+      - corp_id: '<WXWORK_CORP_ID>'
+        agent_id: '<WXWORK_AGENT_ID>'
+        api_secret: '<WXWORK_API_SECRET>'
+        to_user: '<ONCALL_USER_ID>'  # 主值班人
+        message: |
+          🚨【P0】{{ .GroupLabels.alertname }}
+          {{ .CommonAnnotations.summary }}
+        send_resolved: true
+
+  # ----- warning-feishu: 飞书通用 -----
+  - name: 'warning-feishu'
+    webhook_configs:
+      - url: 'https://open.feishu.cn/open-apis/bot/v2/hook/<FEISHU_BOT_TOKEN>'
+        send_resolved: true
+        max_alerts: 20
+
+  # ----- warning-feishu-business: 飞书业务群 -----
+  - name: 'warning-feishu-business'
+    webhook_configs:
+      - url: 'https://open.feishu.cn/open-apis/bot/v2/hook/<FEISHU_BIZ_BOT_TOKEN>'
+        send_resolved: true
+        max_alerts: 20
+
+  # ----- warning-feishu-ops: 飞书运维群 -----
+  - name: 'warning-feishu-ops'
+    webhook_configs:
+      - url: 'https://open.feishu.cn/open-apis/bot/v2/hook/<FEISHU_OPS_BOT_TOKEN>'
+        send_resolved: true
+        max_alerts: 20
+
+  # ----- info-email: 邮件汇总 -----
+  - name: 'info-email'
+    email_configs:
+      - to: 'dev-team@xiaoz-jl.com,ops-team@xiaoz-jl.com'
+        send_resolved: true
+        headers:
+          Subject: 'ℹ️ [INFO] {{ .GroupLabels.alertname }}'
+
+# ============================================================
+# 静默规则(Time Intervals)
+# ============================================================
+time_intervals:
+  # 工作时间外的 warning 静默(避免打扰)
+  - name: business_hours
+    time_intervals:
+      - weekdays: ['monday:friday']
+        times:
+          - start_time: '09:00'
+            end_time: '18:00'
+        location: 'Asia/Shanghai'
+
+  # 周六日
+  - name: weekends
+    time_intervals:
+      - weekdays: ['saturday', 'sunday']
+
+  # 凌晨 0-6 点(系统例行维护)
+  - name: quiet_hours
+    time_intervals:
+      - times:
+          - start_time: '00:00'
+            end_time: '06:00'
+        location: 'Asia/Shanghai'
+
+# ============================================================
+# 告警模板
+# ============================================================
+# (实际模板放在 /etc/alertmanager/templates/alert.tmpl)
+#
+# {{ define "feishu.default.message" }}
+# 📢 [{{ .Status | toUpper }}] {{ .GroupLabels.alertname }}
+#
+# 服务: {{ .GroupLabels.service }}
+# 实例: {{ .CommonLabels.instance }}
+# 严重度: {{ .GroupLabels.severity }}
+# 摘要: {{ .CommonAnnotations.summary }}
+# 描述: {{ .CommonAnnotations.description }}
+# 数量: {{ .Alerts.Firing | len }} 个正在触发
+# {{ end }}
