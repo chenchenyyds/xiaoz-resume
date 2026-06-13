@@ -120,7 +120,8 @@ def activate_code(db: Session, user_id: int, code: str) -> dict:
         raise BizException(BizCode.CONFLICT, "兑换码已被使用")
     if rc.status == "revoked":
         raise BizException(BizCode.CONFLICT, "兑换码已作废")
-    if rc.expire_at and rc.expire_at < datetime.now(timezone.utc):
+    # 兼容 SQLite naive UTC: 写入时 SQLAlchemy 会自动 strip tz,读出来是 naive
+    if rc.expire_at and rc.expire_at < datetime.now(timezone.utc).replace(tzinfo=None):
         raise BizException(BizCode.CONFLICT, "兑换码已过期")
 
     # 标记为已使用

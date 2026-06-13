@@ -148,7 +148,10 @@ def consume_points(
         if acc.balance <= 0:
             continue
         # 已过期的账户余额视为 0(防止边界问题)
-        if acc.expire_at and acc.expire_at < datetime.now(timezone.utc):
+        # 兼容 SQLite naive UTC: 写入时 SQLAlchemy 会自动 strip tz,读出来是 naive
+        if acc.expire_at and acc.expire_at < datetime.now(timezone.utc).replace(
+            tzinfo=None
+        ):
             acc.balance = 0
             continue
         deduct = min(remaining, acc.balance)
