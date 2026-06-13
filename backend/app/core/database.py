@@ -1,4 +1,5 @@
 """数据库连接 + Session 管理"""
+
 from typing import Generator
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
@@ -21,6 +22,7 @@ engine = create_engine(
 
 # SQLite 用 ROLLBACK journal(非 WAL) — 沙箱环境 WAL 的 SHM mmap 多次触发 SIGBUS
 if settings.DATABASE_URL.startswith("sqlite"):
+
     @event.listens_for(engine, "connect")
     def _set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()
@@ -31,7 +33,9 @@ if settings.DATABASE_URL.startswith("sqlite"):
         cursor.close()
 
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False)
+SessionLocal = sessionmaker(
+    autocommit=False, autoflush=False, bind=engine, expire_on_commit=False
+)
 
 Base = declarative_base()
 
@@ -48,7 +52,15 @@ def get_db() -> Generator[Session, None, None]:
 def init_db():
     """开发模式:启动时自动建表。生产请用 Alembic。"""
     from app.models import (  # noqa
-        user, sms_code, point, order, redeem, resume, rewrite, config,
+        user,
+        sms_code,
+        point,
+        order,
+        redeem,
+        resume,
+        rewrite,
+        config,
         operation_log,
     )
+
     Base.metadata.create_all(bind=engine)

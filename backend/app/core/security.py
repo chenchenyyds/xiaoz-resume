@@ -1,4 +1,5 @@
 """安全相关:JWT、密码、当前用户"""
+
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -19,14 +20,22 @@ def create_access_token(user_id: int, is_admin: bool = False) -> str:
         "sub": str(user_id),
         "is_admin": is_admin,
         "iat": int(now.timestamp()),
-        "exp": int((now + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)).timestamp()),
+        "exp": int(
+            (
+                now + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+            ).timestamp()
+        ),
     }
-    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return jwt.encode(
+        payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
+    )
 
 
 def decode_token(token: str) -> dict:
     try:
-        return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        return jwt.decode(
+            token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        )
     except JWTError as e:
         if "expired" in str(e):
             raise BizException(BizCode.TOKEN_EXPIRED, "登录已过期,请重新登录")

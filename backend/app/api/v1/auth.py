@@ -1,4 +1,5 @@
 """鉴权 API - 2 个"""
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -30,7 +31,11 @@ async def send_sms(req: SendSmsReq, db: Session = Depends(get_db)):
 
     code = send_sms_code(req.phone)
     # 开发模式直接返回 code 方便测试,生产应去掉
-    return {"code": 0, "message": "ok", "data": {"sent": True, "dev_code": code if settings.SMS_DEV_MODE else None}}
+    return {
+        "code": 0,
+        "message": "ok",
+        "data": {"sent": True, "dev_code": code if settings.SMS_DEV_MODE else None},
+    }
 
 
 @router.post("/login", summary="登录/注册", response_model=dict)
@@ -49,5 +54,5 @@ async def login(req: LoginReq, db: Session = Depends(get_db)):
             "user_id": user.id,
             "is_new": is_new,
             "invite_code": user.invite_code,
-        }
+        },
     }

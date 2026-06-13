@@ -1,12 +1,17 @@
 """改写相关 schema"""
+
 from pydantic import BaseModel, Field
 from typing import Optional, List
 
 
 class PartialRewriteReq(BaseModel):
     text: str = Field(..., min_length=10, max_length=3000)
-    title: Optional[str] = Field(default=None, max_length=50, description="这段的标题,如'项目经历'")
-    style_hint: Optional[str] = Field(default=None, max_length=100, description="风格提示,如'更口语化'")
+    title: Optional[str] = Field(
+        default=None, max_length=50, description="这段的标题,如'项目经历'"
+    )
+    style_hint: Optional[str] = Field(
+        default=None, max_length=100, description="风格提示,如'更口语化'"
+    )
 
 
 class PartialRewriteResp(BaseModel):
@@ -18,7 +23,9 @@ class PartialRewriteResp(BaseModel):
 
 class FullRewriteReq(BaseModel):
     file_id: int = Field(..., description="已上传的简历文件 ID")
-    jd_text: Optional[str] = Field(default=None, max_length=8000, description="JD 文本,V1 用户手动粘贴")
+    jd_text: Optional[str] = Field(
+        default=None, max_length=8000, description="JD 文本,V1 用户手动粘贴"
+    )
     style_hint: Optional[str] = Field(default=None, max_length=100)
 
 

@@ -1,4 +1,5 @@
 """兑换码 API - 用户端 1 个"""
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 

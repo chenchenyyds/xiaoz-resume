@@ -3,6 +3,7 @@
 记录管理员的所有敏感操作,便于审计。
 - 退款 / 禁用用户 / 调整积分 / 生成兑换码 / 作废兑换码
 """
+
 from typing import Optional
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Query
@@ -21,7 +22,10 @@ router = APIRouter(prefix="/admin/logs", tags=["后台-操作日志"])
 @router.get("", summary="操作日志列表")
 async def list_logs(
     admin_id: Optional[int] = Query(None),
-    action: Optional[str] = Query(None, description="操作类型:refund/disable_user/adjust_points/generate_codes/revoke_code"),
+    action: Optional[str] = Query(
+        None,
+        description="操作类型:refund/disable_user/adjust_points/generate_codes/revoke_code",
+    ),
     target_type: Optional[str] = Query(None, description="目标类型:order/user/code"),
     target_id: Optional[int] = Query(None),
     start_date: Optional[str] = Query(None),
@@ -44,10 +48,18 @@ async def list_logs(
     if start_date:
         q = q.filter(OperationLog.created_at >= datetime.fromisoformat(start_date))
     if end_date:
-        q = q.filter(OperationLog.created_at <= datetime.fromisoformat(end_date) + timedelta(days=1))
+        q = q.filter(
+            OperationLog.created_at
+            <= datetime.fromisoformat(end_date) + timedelta(days=1)
+        )
 
     total = q.count()
-    items = q.order_by(desc(OperationLog.created_at)).offset((page - 1) * page_size).limit(page_size).all()
+    items = (
+        q.order_by(desc(OperationLog.created_at))
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
 
     # 关联管理员手机号
     admin_map = {}
@@ -99,7 +111,9 @@ async def stats(
         a = log.admin_id
         by_admin.setdefault(a, {"count": 0, "actions": {}})
         by_admin[a]["count"] += 1
-        by_admin[a]["actions"][log.action] = by_admin[a]["actions"].get(log.action, 0) + 1
+        by_admin[a]["actions"][log.action] = (
+            by_admin[a]["actions"].get(log.action, 0) + 1
+        )
 
     # 按 action 聚合
     by_action = {}

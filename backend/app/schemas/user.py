@@ -1,4 +1,5 @@
 """用户信息 schema"""
+
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
@@ -19,6 +20,7 @@ class UserInfo(BaseModel):
 
 class PointSummary(BaseModel):
     """积分余额汇总(三种类型分别)"""
+
     trial_balance: int = 0
     subscription_balance: int = 0
     purchase_balance: int = 0

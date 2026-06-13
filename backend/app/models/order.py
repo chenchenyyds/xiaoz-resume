@@ -1,4 +1,5 @@
 """订单"""
+
 from sqlalchemy import Column, BigInteger, Integer, String, Numeric, TIMESTAMP, func
 from app.core.database import Base
 
@@ -20,5 +21,9 @@ class Order(Base):
     paid_at = Column(TIMESTAMP(timezone=True))
     refunded_at = Column(TIMESTAMP(timezone=True))
     refund_amount = Column(Numeric(10, 2))
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )

@@ -1,4 +1,5 @@
 """兑换码服务：生成(后台)、激活(用户端)、作废"""
+
 import hashlib
 import random
 import string
@@ -62,7 +63,10 @@ def generate_batch(
     if points <= 0:
         raise BizException(BizCode.PARAM_ERROR, f"类型 {code_type} 未配置积分")
 
-    batch_id = batch_id or f"B{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:6].upper()}"
+    batch_id = (
+        batch_id
+        or f"B{datetime.now().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:6].upper()}"
+    )
     expire_at = datetime.now(timezone.utc) + timedelta(days=valid_days)
     codes_plain = []
     codes_db = []
@@ -71,21 +75,27 @@ def generate_batch(
         for _attempt in range(5):
             code = _gen_code()
             code_hash = _hash_code(code)
-            if not db.query(RedeemCode).filter(RedeemCode.code_hash == code_hash).first():
+            if (
+                not db.query(RedeemCode)
+                .filter(RedeemCode.code_hash == code_hash)
+                .first()
+            ):
                 break
         else:
             raise RuntimeError("生成兑换码失败,重试 5 次仍冲突")
 
         codes_plain.append(code)
-        codes_db.append(RedeemCode(
-            code_hash=_hash_code(code),
-            code_mask=_mask_code(code),
-            type=code_type,
-            points=points,
-            status="unused",
-            batch_id=batch_id,
-            expire_at=expire_at,
-        ))
+        codes_db.append(
+            RedeemCode(
+                code_hash=_hash_code(code),
+                code_mask=_mask_code(code),
+                type=code_type,
+                points=points,
+                status="unused",
+                batch_id=batch_id,
+                expire_at=expire_at,
+            )
+        )
 
     db.add_all(codes_db)
     db.commit()
@@ -129,7 +139,11 @@ def activate_code(db: Session, user_id: int, code: str) -> dict:
         point_type = "purchase"
         valid_days = 0  # 永久
 
-    expire_at = datetime.now(timezone.utc) + timedelta(days=valid_days) if valid_days > 0 else None
+    expire_at = (
+        datetime.now(timezone.utc) + timedelta(days=valid_days)
+        if valid_days > 0
+        else None
+    )
 
     points_service.grant_points(
         db,

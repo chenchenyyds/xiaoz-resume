@@ -6,6 +6,7 @@
 - 段落内 **加粗** / `行内代码` → 用 runs 应用字体格式
 - > 引用 → 斜体 + 灰色 + 左缩进
 """
+
 from io import BytesIO
 from typing import Optional
 from docx import Document
@@ -49,6 +50,7 @@ def build_docx(md_text: str) -> bytes:
     流程: MD -> parse_md tokens -> 按 token 类型分别用 docx styles 渲染
     """
     import time
+
     t0 = time.time()
     doc = Document()
 
@@ -57,46 +59,48 @@ def build_docx(md_text: str) -> bytes:
 
     # 2. 解析 MD
     tokens = parse_md(md_text)
-    logger.info(f"[docx_builder] parsed {len(tokens)} tokens from md len={len(md_text or '')}")
+    logger.info(
+        f"[docx_builder] parsed {len(tokens)} tokens from md len={len(md_text or '')}"
+    )
 
     # 3. 渲染 tokens
     for tok in tokens:
-        t = tok['type']
-        if t == 'h1':
+        t = tok["type"]
+        if t == "h1":
             p = doc.add_paragraph()
-            run = p.add_run(tok['content'])
+            run = p.add_run(tok["content"])
             run.bold = True
             run.font.size = Pt(18)
-            run.font.color.rgb = RGBColor(0x1a, 0x1a, 0x1a)
+            run.font.color.rgb = RGBColor(0x1A, 0x1A, 0x1A)
             p.paragraph_format.space_before = Pt(12)
             p.paragraph_format.space_after = Pt(8)
-        elif t == 'h2':
+        elif t == "h2":
             p = doc.add_paragraph()
-            run = p.add_run(tok['content'])
+            run = p.add_run(tok["content"])
             run.bold = True
             run.font.size = Pt(14)
-            run.font.color.rgb = RGBColor(0x2a, 0x2a, 0x2a)
+            run.font.color.rgb = RGBColor(0x2A, 0x2A, 0x2A)
             p.paragraph_format.space_before = Pt(10)
             p.paragraph_format.space_after = Pt(4)
             # 加底色(用段落底纹需要 OxmlElement,这里简化)
-        elif t == 'h3':
+        elif t == "h3":
             p = doc.add_paragraph()
-            run = p.add_run(tok['content'])
+            run = p.add_run(tok["content"])
             run.bold = True
             run.font.size = Pt(12)
             p.paragraph_format.space_before = Pt(8)
             p.paragraph_format.space_after = Pt(3)
-        elif t == 'p':
+        elif t == "p":
             p = doc.add_paragraph()
             p.paragraph_format.space_after = Pt(4)
-            _add_runs_to_paragraph(p, tok['runs'])
-        elif t in ('ul', 'ol'):
-            for idx, item in enumerate(tok['items']):
-                p = _add_list_paragraph(doc, t, idx, item['runs'])
-        elif t == 'blockquote':
+            _add_runs_to_paragraph(p, tok["runs"])
+        elif t in ("ul", "ol"):
+            for idx, item in enumerate(tok["items"]):
+                p = _add_list_paragraph(doc, t, idx, item["runs"])
+        elif t == "blockquote":
             p = doc.add_paragraph()
             p.paragraph_format.left_indent = Pt(20)
-            run = p.add_run(tok['content'])
+            run = p.add_run(tok["content"])
             run.italic = True
             run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
 
@@ -109,7 +113,9 @@ def build_docx(md_text: str) -> bytes:
     doc.save(buf)
     bytes_out = buf.getvalue()
     ms = int((time.time() - t0) * 1000)
-    logger.info(f"[docx_builder] OK bytes={len(bytes_out)} tokens={len(tokens)} duration={ms}ms")
+    logger.info(
+        f"[docx_builder] OK bytes={len(bytes_out)} tokens={len(tokens)} duration={ms}ms"
+    )
     return bytes_out
 
 
@@ -137,16 +143,16 @@ def _add_runs_to_paragraph(p, runs: list) -> None:
     from docx.oxml import OxmlElement
 
     for r in runs:
-        text = r.get('text', '')
+        text = r.get("text", "")
         if not text:
             continue
         run = p.add_run(text)
-        fmt = r.get('fmt', '') or ''
-        if 'b' in fmt:
+        fmt = r.get("fmt", "") or ""
+        if "b" in fmt:
             run.bold = True
-        if 'i' in fmt:
+        if "i" in fmt:
             run.italic = True
-        if 'code' in fmt:
+        if "code" in fmt:
             # 行内代码:等宽字体 + 浅灰底
             run.font.name = "Consolas"
             rpr = run._element.get_or_add_rPr()
@@ -163,8 +169,8 @@ def _add_runs_to_paragraph(p, runs: list) -> None:
             shd.set(qn("w:color"), "auto")
             shd.set(qn("w:fill"), "F2F2F2")
             rpr.append(shd)
-        if 'link' in fmt:
-            href = r.get('href', '')
+        if "link" in fmt:
+            href = r.get("href", "")
             if href:
                 run.font.color.rgb = RGBColor(0x05, 0x63, 0xC1)
                 run.font.underline = True
@@ -178,14 +184,14 @@ def _add_list_paragraph(doc, list_type: str, idx: int, runs: list):
 
     # 检测嵌套 level(从 runs[0] 的 level 字段读)
     level = 0
-    if runs and 'level' in runs[0]:
-        level = runs[0]['level'] or 0
+    if runs and "level" in runs[0]:
+        level = runs[0]["level"] or 0
 
     if level > 0:
         p.paragraph_format.left_indent = Pt(12 * (level + 1))
 
     # 加 bullet 前缀
-    if list_type == 'ul':
+    if list_type == "ul":
         prefix = "• " if level == 0 else "◦ "  # 一级 •  二级 ◦
     else:
         prefix = f"{idx + 1}. "

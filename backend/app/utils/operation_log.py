@@ -2,6 +2,7 @@
 
 在 admin API 中调用 record_admin_log() 即可记录。
 """
+
 import json
 from typing import Optional
 from fastapi import Request

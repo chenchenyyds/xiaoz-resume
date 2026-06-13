@@ -1,4 +1,5 @@
 """文件 API - 4 个"""
+
 from fastapi import APIRouter, Depends, UploadFile, File, Form, Query
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
@@ -27,7 +28,9 @@ async def upload(
     max_per_day = get_config_int(db, "limit.upload_per_day", 20)
     check_rate_limit(user.id, "upload", max_per_day, 86400)
 
-    logger.info(f"[api.files.upload] user={user.id} enter filename={file.filename!r} content_type={file.content_type} title={title!r}")
+    logger.info(
+        f"[api.files.upload] user={user.id} enter filename={file.filename!r} content_type={file.content_type} title={title!r}"
+    )
     result = await file_service.save_uploaded_resume(db, user.id, file, title)
     # 统一包装:与项目其它 API 一致 {code:0, message:"ok", data:...}
     return ok(UploadResp(**result).model_dump())
@@ -40,11 +43,19 @@ async def list_files(
 ):
     files = file_service.list_user_files(db, user.id)
     return FileListResp(
-        items=[FileItem(
-            id=f.id, file_name=f.file_name, file_format=f.file_format,
-            file_url=f.file_url, file_size=f.file_size, type=f.type,
-            with_jd=f.with_jd, created_at=f.created_at,
-        ) for f in files],
+        items=[
+            FileItem(
+                id=f.id,
+                file_name=f.file_name,
+                file_format=f.file_format,
+                file_url=f.file_url,
+                file_size=f.file_size,
+                type=f.type,
+                with_jd=f.with_jd,
+                created_at=f.created_at,
+            )
+            for f in files
+        ],
         total=len(files),
     )
 
@@ -60,11 +71,14 @@ async def download_file(
     - 生成的简历:实时重建字节流(format=docx 或 pdf)
     - 上传的原始文件:file_url 有 OSS 链接则 302,否则返回 content_text 重建
     """
-    logger.info(f"[api.files.download] user={user.id} file_id={file_id} format={format}")
+    logger.info(
+        f"[api.files.download] user={user.id} file_id={file_id} format={format}"
+    )
     res = file_service.get_file_for_download(db, user.id, file_id, format)
     if res["kind"] == "url" and res["url"]:
         # OSS 链接:重定向
         from fastapi.responses import RedirectResponse
+
         return RedirectResponse(res["url"])
     if res["kind"] == "url" and not res["url"]:
         # 没 OSS:从 content_text 重建(只支持 docx)

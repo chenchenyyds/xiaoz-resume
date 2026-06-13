@@ -1,4 +1,5 @@
 """用户服务：注册、登录、生成推广码"""
+
 import random
 import string
 from typing import Optional

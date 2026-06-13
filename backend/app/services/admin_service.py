@@ -1,4 +1,5 @@
 """后台管理服务：看板、订单、用户、兑换码查询"""
+
 from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from typing import Optional
@@ -23,10 +24,14 @@ def get_dashboard(db: Session) -> dict:
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
     # 今日订单
-    today_orders = db.query(Order).filter(
-        Order.created_at >= today_start,
-        Order.status == "paid",
-    ).all()
+    today_orders = (
+        db.query(Order)
+        .filter(
+            Order.created_at >= today_start,
+            Order.status == "paid",
+        )
+        .all()
+    )
     today_revenue = sum((o.pay_amount or o.amount) for o in today_orders)
     today_count = len(today_orders)
 
@@ -34,8 +39,12 @@ def get_dashboard(db: Session) -> dict:
     today_dau = db.query(User).filter(User.last_active_at >= today_start).count()
 
     # 今日 LLM 成本(简化估算:输入+输出 token,按 2 元/百万 token)
-    today_records = db.query(RewriteRecord).filter(RewriteRecord.created_at >= today_start).all()
-    total_tokens = sum((r.input_tokens or 0) + (r.output_tokens or 0) for r in today_records)
+    today_records = (
+        db.query(RewriteRecord).filter(RewriteRecord.created_at >= today_start).all()
+    )
+    total_tokens = sum(
+        (r.input_tokens or 0) + (r.output_tokens or 0) for r in today_records
+    )
     today_llm_cost = Decimal(str(round(total_tokens / 1000000 * 2, 4)))
 
     # 累计
@@ -72,11 +81,20 @@ def list_orders(
     if product_code:
         q = q.filter(Order.product_code == product_code)
     total = q.count()
-    items = q.order_by(Order.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    items = (
+        q.order_by(Order.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
 
     # 关联用户手机号
     user_ids = list({o.user_id for o in items if o.user_id})
-    users = {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()} if user_ids else {}
+    users = (
+        {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()}
+        if user_ids
+        else {}
+    )
     for o in items:
         o._user = users.get(o.user_id) if o.user_id else None
     return items, total
@@ -99,47 +117,64 @@ def list_users(
     if status:
         q = q.filter(User.status == status)
     total = q.count()
-    users = q.order_by(User.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    users = (
+        q.order_by(User.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
 
     # 聚合每个用户的积分和订单数据
     user_ids = [u.id for u in users]
     point_stats = {}
     if user_ids:
-        rows = db.query(
-            PointAccount.user_id,
-            func.coalesce(func.sum(PointAccount.total_earned), 0).label("earned"),
-            func.coalesce(func.sum(PointAccount.total_used), 0).label("used"),
-        ).filter(PointAccount.user_id.in_(user_ids)).group_by(PointAccount.user_id).all()
+        rows = (
+            db.query(
+                PointAccount.user_id,
+                func.coalesce(func.sum(PointAccount.total_earned), 0).label("earned"),
+                func.coalesce(func.sum(PointAccount.total_used), 0).label("used"),
+            )
+            .filter(PointAccount.user_id.in_(user_ids))
+            .group_by(PointAccount.user_id)
+            .all()
+        )
         point_stats = {r.user_id: (r.earned, r.used) for r in rows}
 
     order_stats = {}
     if user_ids:
-        rows = db.query(
-            Order.user_id,
-            func.count(Order.id).label("cnt"),
-            func.coalesce(func.sum(Order.pay_amount), 0).label("total"),
-        ).filter(Order.user_id.in_(user_ids), Order.status == "paid").group_by(Order.user_id).all()
+        rows = (
+            db.query(
+                Order.user_id,
+                func.count(Order.id).label("cnt"),
+                func.coalesce(func.sum(Order.pay_amount), 0).label("total"),
+            )
+            .filter(Order.user_id.in_(user_ids), Order.status == "paid")
+            .group_by(Order.user_id)
+            .all()
+        )
         order_stats = {r.user_id: (r.cnt, r.total) for r in rows}
 
     result = []
     for u in users:
         earned, used = point_stats.get(u.id, (0, 0))
         cnt, total = order_stats.get(u.id, (0, 0))
-        result.append({
-            "id": u.id,
-            "phone": u.phone,
-            "nickname": u.nickname,
-            "status": u.status,
-            "is_admin": u.is_admin,
-            "invite_user_id": u.invite_user_id,
-            "invite_code": u.invite_code,
-            "total_points_earned": int(earned),
-            "total_points_used": int(used),
-            "total_orders": cnt,
-            "total_spent": total or Decimal("0"),
-            "created_at": u.created_at,
-            "last_active_at": u.last_active_at,
-        })
+        result.append(
+            {
+                "id": u.id,
+                "phone": u.phone,
+                "nickname": u.nickname,
+                "status": u.status,
+                "is_admin": u.is_admin,
+                "invite_user_id": u.invite_user_id,
+                "invite_code": u.invite_code,
+                "total_points_earned": int(earned),
+                "total_points_used": int(used),
+                "total_orders": cnt,
+                "total_spent": total or Decimal("0"),
+                "created_at": u.created_at,
+                "last_active_at": u.last_active_at,
+            }
+        )
     return result, total
 
 
@@ -149,25 +184,41 @@ def get_user_detail(db: Session, user_id: int) -> dict:
         raise BizException(BizCode.NOT_FOUND, "用户不存在")
 
     # 积分流水(最近 20 条)
-    txns = db.query(PointTransaction).filter(
-        PointTransaction.user_id == user_id
-    ).order_by(PointTransaction.created_at.desc()).limit(20).all()
+    txns = (
+        db.query(PointTransaction)
+        .filter(PointTransaction.user_id == user_id)
+        .order_by(PointTransaction.created_at.desc())
+        .limit(20)
+        .all()
+    )
 
     # 最近订单
-    orders = db.query(Order).filter(
-        Order.user_id == user_id
-    ).order_by(Order.created_at.desc()).limit(10).all()
+    orders = (
+        db.query(Order)
+        .filter(Order.user_id == user_id)
+        .order_by(Order.created_at.desc())
+        .limit(10)
+        .all()
+    )
 
     # 聚合
-    point_stats = db.query(
-        func.coalesce(func.sum(PointAccount.total_earned), 0),
-        func.coalesce(func.sum(PointAccount.total_used), 0),
-    ).filter(PointAccount.user_id == user_id).first()
+    point_stats = (
+        db.query(
+            func.coalesce(func.sum(PointAccount.total_earned), 0),
+            func.coalesce(func.sum(PointAccount.total_used), 0),
+        )
+        .filter(PointAccount.user_id == user_id)
+        .first()
+    )
     earned, used = point_stats or (0, 0)
-    order_stats = db.query(
-        func.count(Order.id),
-        func.coalesce(func.sum(Order.pay_amount), 0),
-    ).filter(Order.user_id == user_id, Order.status == "paid").first()
+    order_stats = (
+        db.query(
+            func.count(Order.id),
+            func.coalesce(func.sum(Order.pay_amount), 0),
+        )
+        .filter(Order.user_id == user_id, Order.status == "paid")
+        .first()
+    )
     cnt, total = order_stats or (0, 0)
 
     return {
@@ -194,7 +245,8 @@ def get_user_detail(db: Session, user_id: int) -> dict:
                 "feature": t.feature,
                 "remark": t.remark,
                 "created_at": t.created_at,
-            } for t in txns
+            }
+            for t in txns
         ],
         "recent_orders": [
             {
@@ -211,7 +263,8 @@ def get_user_detail(db: Session, user_id: int) -> dict:
                 "refunded_at": o.refunded_at,
                 "refund_amount": o.refund_amount,
                 "created_at": o.created_at,
-            } for o in orders
+            }
+            for o in orders
         ],
     }
 
@@ -243,36 +296,60 @@ def adjust_user_points(
 ):
     """调整用户积分(后台)"""
     from app.services import points_service
+
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise BizException(BizCode.NOT_FOUND, "用户不存在")
 
     if change > 0:
         points_service.grant_points(
-            db, user_id=user_id, point_type=point_type,
-            amount=change, source="admin_adjust",
-            feature="admin", remark=f"管理员调整: {reason}",
+            db,
+            user_id=user_id,
+            point_type=point_type,
+            amount=change,
+            source="admin_adjust",
+            feature="admin",
+            remark=f"管理员调整: {reason}",
         )
     elif change < 0:
         # 负向调整:直接扣
         from app.models.point import PointAccount
-        acc = db.query(PointAccount).filter(
-            PointAccount.user_id == user_id,
-            PointAccount.point_type == point_type,
-            PointAccount.balance > 0,
-        ).order_by(PointAccount.created_at.asc()).first()
+
+        acc = (
+            db.query(PointAccount)
+            .filter(
+                PointAccount.user_id == user_id,
+                PointAccount.point_type == point_type,
+                PointAccount.balance > 0,
+            )
+            .order_by(PointAccount.created_at.asc())
+            .first()
+        )
         if not acc:
-            raise BizException(BizCode.INSUFFICIENT_POINTS, f"用户没有 {point_type} 积分可扣")
+            raise BizException(
+                BizCode.INSUFFICIENT_POINTS, f"用户没有 {point_type} 积分可扣"
+            )
         if acc.balance < abs(change):
-            raise BizException(BizCode.INSUFFICIENT_POINTS, f"积分不足,当前 {acc.balance},要扣 {abs(change)}")
+            raise BizException(
+                BizCode.INSUFFICIENT_POINTS,
+                f"积分不足,当前 {acc.balance},要扣 {abs(change)}",
+            )
         acc.balance += change  # change 是负的
         acc.total_used += abs(change)
         from app.models.point import PointTransaction
-        db.add(PointTransaction(
-            user_id=user_id, point_type=point_type, change=change,
-            balance_before=acc.balance - change, balance_after=acc.balance,
-            source="admin_adjust", feature="admin", remark=f"管理员调整: {reason}",
-        ))
+
+        db.add(
+            PointTransaction(
+                user_id=user_id,
+                point_type=point_type,
+                change=change,
+                balance_before=acc.balance - change,
+                balance_after=acc.balance,
+                source="admin_adjust",
+                feature="admin",
+                remark=f"管理员调整: {reason}",
+            )
+        )
     db.commit()
     return {"user_id": user_id, "change": change, "point_type": point_type}
 
@@ -296,5 +373,10 @@ def list_codes(
     if type_:
         q = q.filter(RedeemCode.type == type_)
     total = q.count()
-    items = q.order_by(RedeemCode.id.desc()).offset((page - 1) * page_size).limit(page_size).all()
+    items = (
+        q.order_by(RedeemCode.id.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
     return items, total

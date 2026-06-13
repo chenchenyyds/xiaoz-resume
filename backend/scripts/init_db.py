@@ -1,4 +1,5 @@
 """数据库初始化脚本 - 执行 01_schema.sql + 02_seed.sql"""
+
 import os
 import sys
 import psycopg2
@@ -16,8 +17,11 @@ def run_sql_file(path: str):
     with open(path, "r", encoding="utf-8") as f:
         sql = f.read()
     conn = psycopg2.connect(
-        host=DB_HOST, port=DB_PORT, user=DB_USER,
-        password=DB_PASSWORD, dbname=DB_NAME,
+        host=DB_HOST,
+        port=DB_PORT,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        dbname=DB_NAME,
     )
     conn.autocommit = True
     cur = conn.cursor()

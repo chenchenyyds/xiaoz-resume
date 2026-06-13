@@ -10,6 +10,7 @@
   cd 代码/backend && python scripts/seed_dev_data.py
   cd 代码 && make seed-dev
 """
+
 import os
 import sys
 import secrets
@@ -36,8 +37,8 @@ from app.models.resume import ResumeFile
 # ---------- 配置 ----------
 DEV_USERS = [
     # (phone, is_admin, invite_code, invite_user_phone)
-    ("13800000000", True, "ADMIN01", None),         # 管理员
-    ("13800000001", False, "USERA01", None),        # 普通用户 A(无推广人)
+    ("13800000000", True, "ADMIN01", None),  # 管理员
+    ("13800000001", False, "USERA01", None),  # 普通用户 A(无推广人)
     ("13800000002", False, "USERB02", "13800000001"),  # 普通用户 B(A 推广来的)
     ("13800000003", False, "USERC03", "13800000001"),  # 普通用户 C(A 推广来的)
 ]
@@ -65,7 +66,13 @@ def mask_code(code: str) -> str:
     return code[:4] + "****" + code[-4:]
 
 
-def upsert_user(db: Session, phone: str, is_admin: bool, invite_code: str, invite_user_id: int = None) -> User:
+def upsert_user(
+    db: Session,
+    phone: str,
+    is_admin: bool,
+    invite_code: str,
+    invite_user_id: int = None,
+) -> User:
     u = db.query(User).filter(User.phone == phone).first()
     if u:
         print(f"  ↻ 用户 {phone} 已存在(id={u.id}),跳过")
@@ -88,8 +95,16 @@ def upsert_user(db: Session, phone: str, is_admin: bool, invite_code: str, invit
     return u
 
 
-def grant_points(db: Session, user_id: int, points: int, point_type: str, source: str,
-                 expire_at=None, related_id=None, remark=""):
+def grant_points(
+    db: Session,
+    user_id: int,
+    points: int,
+    point_type: str,
+    source: str,
+    expire_at=None,
+    related_id=None,
+    remark="",
+):
     """给用户加积分(走 PointAccount + PointTransaction)"""
     # 1) 账户批次
     pa = PointAccount(
@@ -125,7 +140,9 @@ def grant_points(db: Session, user_id: int, points: int, point_type: str, source
     print(f"    ✓ {user_id} 获得 {points} 积分 ({point_type}, source={source})")
 
 
-def create_order(db: Session, user_id: int, product_code: str, amount: float, status: str = "paid") -> Order:
+def create_order(
+    db: Session, user_id: int, product_code: str, amount: float, status: str = "paid"
+) -> Order:
     o = Order(
         order_no=f"TEST{datetime.utcnow().strftime('%Y%m%d%H%M%S')}{secrets.token_hex(2).upper()}",
         user_id=user_id,
@@ -232,20 +249,38 @@ def main():
 
         # 3) 给 user_a 一些积分(用于演示)
         print("➜ 步骤 3: 给用户 A 灌积分(用于演示)")
-        grant_points(db, users["13800000001"].id, 200, "purchase", source="order",
-                     remark="测试 - 增购 1000 积分订单的一部分")
-        grant_points(db, users["13800000001"].id, 50, "trial", source="trial",
-                     expire_at=datetime.utcnow() + timedelta(days=90),
-                     remark="测试 - 注册赠送试用")
+        grant_points(
+            db,
+            users["13800000001"].id,
+            200,
+            "purchase",
+            source="order",
+            remark="测试 - 增购 1000 积分订单的一部分",
+        )
+        grant_points(
+            db,
+            users["13800000001"].id,
+            50,
+            "trial",
+            source="trial",
+            expire_at=datetime.utcnow() + timedelta(days=90),
+            remark="测试 - 注册赠送试用",
+        )
         print()
 
         # 4) 创建月卡订单(已支付)
         print("➜ 步骤 4: 创建月卡订单(已支付)")
         o = create_order(db, users["13800000001"].id, "monthly", 29.0, status="paid")
-        grant_points(db, users["13800000001"].id, 3000, "subscription", source="order",
-                     expire_at=datetime.utcnow() + timedelta(days=30),
-                     related_id=o.id,
-                     remark=f"测试 - 月卡订单 {o.order_no} 支付成功")
+        grant_points(
+            db,
+            users["13800000001"].id,
+            3000,
+            "subscription",
+            source="order",
+            expire_at=datetime.utcnow() + timedelta(days=30),
+            related_id=o.id,
+            remark=f"测试 - 月卡订单 {o.order_no} 支付成功",
+        )
         print()
 
         # 5) 生成兑换码

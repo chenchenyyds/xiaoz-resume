@@ -1,4 +1,5 @@
 """兑换码"""
+
 from sqlalchemy import Column, BigInteger, String, Integer, TIMESTAMP, func
 from app.core.database import Base
 
@@ -18,4 +19,6 @@ class RedeemCode(Base):
     used_at = Column(TIMESTAMP(timezone=True))
     expire_at = Column(TIMESTAMP(timezone=True))
     invite_user_id = Column(Integer)
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )

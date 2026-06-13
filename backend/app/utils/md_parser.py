@@ -15,6 +15,7 @@
 
 fmt 字段: 'b' / 'i' / 'code' / 'b/i' 组合(用 / 分隔)
 """
+
 import time
 import markdown as md_lib
 from bs4 import BeautifulSoup, NavigableString
@@ -31,46 +32,50 @@ def parse_md(md_text: str) -> list:
 
     t0 = time.time()
     html = md_lib.markdown(
-        md_text, extensions=['extra', 'sane_lists', 'tables', 'fenced_code']
+        md_text, extensions=["extra", "sane_lists", "tables", "fenced_code"]
     )
-    soup = BeautifulSoup(html, "html.parser")  # 纯 Python,避免 lxml/html5lib native 扩展
+    soup = BeautifulSoup(
+        html, "html.parser"
+    )  # 纯 Python,避免 lxml/html5lib native 扩展
 
     tokens = []
     h1 = h2 = h3 = p_cnt = ul_cnt = ol_cnt = quote_cnt = 0
 
     for el in soup.children:
-        if not hasattr(el, 'name') or el.name is None:
+        if not hasattr(el, "name") or el.name is None:
             continue
-        name = (el.name or '').lower()
-        if name == 'h1':
-            tokens.append({'type': 'h1', 'content': el.get_text().strip()})
+        name = (el.name or "").lower()
+        if name == "h1":
+            tokens.append({"type": "h1", "content": el.get_text().strip()})
             h1 += 1
-        elif name == 'h2':
-            tokens.append({'type': 'h2', 'content': el.get_text().strip()})
+        elif name == "h2":
+            tokens.append({"type": "h2", "content": el.get_text().strip()})
             h2 += 1
-        elif name == 'h3':
-            tokens.append({'type': 'h3', 'content': el.get_text().strip()})
+        elif name == "h3":
+            tokens.append({"type": "h3", "content": el.get_text().strip()})
             h3 += 1
-        elif name == 'h4':
-            tokens.append({'type': 'h3', 'content': el.get_text().strip()})
+        elif name == "h4":
+            tokens.append({"type": "h3", "content": el.get_text().strip()})
             h3 += 1
-        elif name == 'p':
-            tokens.append({'type': 'p', 'runs': _collect_runs(el)})
+        elif name == "p":
+            tokens.append({"type": "p", "runs": _collect_runs(el)})
             p_cnt += 1
-        elif name == 'ul':
-            tokens.append({'type': 'ul', 'items': _items_from_list(el, level=0)})
+        elif name == "ul":
+            tokens.append({"type": "ul", "items": _items_from_list(el, level=0)})
             ul_cnt += 1
-        elif name == 'ol':
-            tokens.append({'type': 'ol', 'items': _items_from_list(el, level=0)})
+        elif name == "ol":
+            tokens.append({"type": "ol", "items": _items_from_list(el, level=0)})
             ol_cnt += 1
-        elif name == 'blockquote':
-            tokens.append({'type': 'blockquote', 'content': el.get_text().strip()})
+        elif name == "blockquote":
+            tokens.append({"type": "blockquote", "content": el.get_text().strip()})
             quote_cnt += 1
-        elif name == 'table':
-            tokens.append({'type': 'p', 'runs': _collect_runs(el)})
+        elif name == "table":
+            tokens.append({"type": "p", "runs": _collect_runs(el)})
             p_cnt += 1
-        elif name == 'pre':
-            tokens.append({'type': 'p', 'runs': [{'text': el.get_text(), 'fmt': 'code'}]})
+        elif name == "pre":
+            tokens.append(
+                {"type": "p", "runs": [{"text": el.get_text(), "fmt": "code"}]}
+            )
             p_cnt += 1
 
     ms = int((time.time() - t0) * 1000)
@@ -87,13 +92,13 @@ def _items_from_list(ul_el, level: int = 0) -> list:
     嵌套的 ul/ol 会展开为同级 item(level+1)
     """
     items = []
-    for li in ul_el.find_all('li', recursive=False):
+    for li in ul_el.find_all("li", recursive=False):
         # 先看 li 的顶层内容(text + inline tags),跳过嵌套的 ul/ol
         runs = _collect_runs(li, skip_ul=True, level=level)
         if runs:
-            items.append({'runs': runs})
+            items.append({"runs": runs})
         # 处理嵌套列表
-        for nested in li.find_all(['ul', 'ol'], recursive=False):
+        for nested in li.find_all(["ul", "ol"], recursive=False):
             nested_type = nested.name.lower()
             items.extend(_items_from_list(nested, level=level + 1))
     return items
@@ -113,40 +118,48 @@ def _collect_runs(el, skip_ul: bool = False, level: int = 0) -> list:
             if isinstance(child, NavigableString):
                 text = str(child)
                 if text:
-                    runs.append({
-                        'text': text,
-                        'fmt': '/'.join(fmt_stack) if fmt_stack else '',
-                        'level': level,
-                    })
+                    runs.append(
+                        {
+                            "text": text,
+                            "fmt": "/".join(fmt_stack) if fmt_stack else "",
+                            "level": level,
+                        }
+                    )
                 continue
-            name = (getattr(child, 'name', '') or '').lower()
+            name = (getattr(child, "name", "") or "").lower()
             if not name:
                 continue
-            if name in ('ul', 'ol'):
+            if name in ("ul", "ol"):
                 # 跳过嵌套列表(_items_from_list 会单独处理)
                 continue
-            if name in ('strong', 'b'):
-                walk(child, fmt_stack + ['b'])
-            elif name in ('em', 'i'):
-                walk(child, fmt_stack + ['i'])
-            elif name == 'code':
-                walk(child, fmt_stack + ['code'])
-            elif name == 'a':
-                href = child.get('href', '') or ''
+            if name in ("strong", "b"):
+                walk(child, fmt_stack + ["b"])
+            elif name in ("em", "i"):
+                walk(child, fmt_stack + ["i"])
+            elif name == "code":
+                walk(child, fmt_stack + ["code"])
+            elif name == "a":
+                href = child.get("href", "") or ""
                 text = child.get_text()
                 if text:
-                    runs.append({
-                        'text': text,
-                        'fmt': '/'.join(fmt_stack + ['link']) if fmt_stack else 'link',
-                        'level': level,
-                        'href': href,
-                    })
-            elif name == 'br':
-                runs.append({
-                    'text': '\n',
-                    'fmt': '/'.join(fmt_stack) if fmt_stack else '',
-                    'level': level,
-                })
+                    runs.append(
+                        {
+                            "text": text,
+                            "fmt": (
+                                "/".join(fmt_stack + ["link"]) if fmt_stack else "link"
+                            ),
+                            "level": level,
+                            "href": href,
+                        }
+                    )
+            elif name == "br":
+                runs.append(
+                    {
+                        "text": "\n",
+                        "fmt": "/".join(fmt_stack) if fmt_stack else "",
+                        "level": level,
+                    }
+                )
             else:
                 walk(child, fmt_stack)
 
@@ -162,8 +175,8 @@ def _merge_runs(runs: list) -> list:
     merged = [runs[0]]
     for r in runs[1:]:
         prev = merged[-1]
-        if prev['fmt'] == r['fmt'] and prev.get('level', 0) == r.get('level', 0):
-            prev['text'] += r['text']
+        if prev["fmt"] == r["fmt"] and prev.get("level", 0) == r.get("level", 0):
+            prev["text"] += r["text"]
         else:
             merged.append(r)
     return merged
@@ -179,19 +192,19 @@ def render_runs_to_html(runs: list) -> str:
     """
     parts = []
     for r in runs:
-        text = _escape(r['text'])
-        fmt = r.get('fmt', '')
-        if 'link' in fmt:
-            href = _escape(r.get('href', ''))
+        text = _escape(r["text"])
+        fmt = r.get("fmt", "")
+        if "link" in fmt:
+            href = _escape(r.get("href", ""))
             parts.append(f'<link href="{href}">{text}</link>')
         else:
             # 包外层 fmt
             wrapped = text
-            if 'b' in fmt:
-                wrapped = f'<b>{wrapped}</b>'
-            if 'i' in fmt:
-                wrapped = f'<i>{wrapped}</i>'
-            if 'code' in fmt:
+            if "b" in fmt:
+                wrapped = f"<b>{wrapped}</b>"
+            if "i" in fmt:
+                wrapped = f"<i>{wrapped}</i>"
+            if "code" in fmt:
                 # reportlab 不支持 <code>,转 <font face="Courier">
                 wrapped = f'<font face="Courier">{wrapped}</font>'
             parts.append(wrapped)
@@ -200,8 +213,4 @@ def render_runs_to_html(runs: list) -> str:
 
 def _escape(text: str) -> str:
     """转义 reportlab Paragraph 的特殊字符"""
-    return (
-        text.replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-    )
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

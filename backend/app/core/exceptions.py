@@ -1,4 +1,5 @@
 """业务异常 + 统一响应"""
+
 from typing import Any, Optional
 
 
@@ -23,7 +24,10 @@ class BizCode:
 
 class BizException(Exception):
     """业务异常,被全局 handler 转成 JSON"""
-    def __init__(self, code: int, message: str, data: Any = None, http_status: int = 200):
+
+    def __init__(
+        self, code: int, message: str, data: Any = None, http_status: int = 200
+    ):
         self.code = code
         self.message = message
         self.data = data

@@ -1,4 +1,5 @@
 """阿里云短信发送 - V1 一家就够"""
+
 import random
 import string
 from typing import Optional
@@ -33,7 +34,11 @@ def send_sms_code(phone: str) -> str:
 
     code = _gen_code()
     try:
-        client = AcsClient(settings.SMS_ACCESS_KEY_ID, settings.SMS_ACCESS_KEY_SECRET, settings.SMS_REGION)
+        client = AcsClient(
+            settings.SMS_ACCESS_KEY_ID,
+            settings.SMS_ACCESS_KEY_SECRET,
+            settings.SMS_REGION,
+        )
         request = CommonRequest()
         request.set_accept_format("json")
         request.set_domain("dysmsapi.aliyuncs.com")
@@ -50,7 +55,9 @@ def send_sms_code(phone: str) -> str:
         result = json.loads(response)
         if result.get("Code") != "OK":
             logger.error(f"短信发送失败: {result}")
-            raise BizException(BizCode.SMS_ERROR, f"短信发送失败: {result.get('Message', '未知错误')}")
+            raise BizException(
+                BizCode.SMS_ERROR, f"短信发送失败: {result.get('Message', '未知错误')}"
+            )
 
         redis_client.setex(sms_code_key(phone), 300, code)
         redis_client.setex(sms_send_key(phone), 60, "1")

@@ -4,8 +4,10 @@
     cd backend
     python -m scripts.create_admin 13800000000
 """
+
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.database import SessionLocal, init_db

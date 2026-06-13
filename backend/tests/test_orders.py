@@ -1,6 +1,8 @@
 """订单 + 支付测试(不调真实虎皮椒,只测试本地逻辑)"""
+
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
@@ -20,7 +22,9 @@ from app.services.config_service import _cache
 
 @pytest.fixture
 def db():
-    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    engine = create_engine(
+        "sqlite:///:memory:", connect_args={"check_same_thread": False}
+    )
     Base.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine)
     db = SessionLocal()
@@ -93,8 +97,10 @@ def test_handle_notify_grants_points(db, user):
     with patch("app.services.order_service.verify_notify") as mock_verify:
         mock_verify.return_value = True
         params = {
-            "order_no": order_no, "status": "paid",
-            "pay_trade_no": "test_trade_123", "amount": "9.90",
+            "order_no": order_no,
+            "status": "paid",
+            "pay_trade_no": "test_trade_123",
+            "amount": "9.90",
         }
         ret = order_service.handle_hupijiao_notify(db, params)
         assert ret == "success"
@@ -115,22 +121,28 @@ def test_handle_notify_grants_commission(db, user, inviter):
     # 用推广码下单
     with patch("app.services.order_service.hupijiao_create") as mock_pay:
         mock_pay.return_value = {"pay_url": "https://test"}
-        result = order_service.create_order(db, user.id, "monthly", invite_code=inviter.invite_code)
+        result = order_service.create_order(
+            db, user.id, "monthly", invite_code=inviter.invite_code
+        )
         order_no = result["order_no"]
 
     # 模拟回调
     with patch("app.services.order_service.verify_notify") as mock_verify:
         mock_verify.return_value = True
         params = {
-            "order_no": order_no, "status": "paid",
-            "pay_trade_no": "test_001", "amount": "29.00",
+            "order_no": order_no,
+            "status": "paid",
+            "pay_trade_no": "test_001",
+            "amount": "29.00",
         }
         order_service.handle_hupijiao_notify(db, params)
 
     # 验证推广人收到返佣(29 * 0.25 = 7.25 元 = 725 积分)
-    inviter_accs = db.query(PointAccount).filter(
-        PointAccount.user_id == inviter.id, PointAccount.source == "commission"
-    ).all()
+    inviter_accs = (
+        db.query(PointAccount)
+        .filter(PointAccount.user_id == inviter.id, PointAccount.source == "commission")
+        .all()
+    )
     assert len(inviter_accs) == 1
     assert inviter_accs[0].balance == 725
 
@@ -144,7 +156,15 @@ def test_refund_order(db, user):
 
     with patch("app.services.order_service.verify_notify") as mock_verify:
         mock_verify.return_value = True
-        order_service.handle_hupijiao_notify(db, params={"order_no": order_no, "status": "paid", "pay_trade_no": "t1", "amount": "9.9"})
+        order_service.handle_hupijiao_notify(
+            db,
+            params={
+                "order_no": order_no,
+                "status": "paid",
+                "pay_trade_no": "t1",
+                "amount": "9.9",
+            },
+        )
 
     # 退款
     order_service.refund_order(db, order_no, reason="用户申请")
@@ -152,5 +172,8 @@ def test_refund_order(db, user):
     assert order.status == "refunded"
 
     # 退积分后,账户应该有 500+500=1000
-    total = sum(a.balance for a in db.query(PointAccount).filter(PointAccount.user_id == user.id).all())
+    total = sum(
+        a.balance
+        for a in db.query(PointAccount).filter(PointAccount.user_id == user.id).all()
+    )
     assert total == 1000

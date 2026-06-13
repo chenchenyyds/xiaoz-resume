@@ -18,9 +18,14 @@
   Gauge:
     - xiaoz_point_balance_total{point_type}      积分余额分布
 """
+
 from prometheus_client import (
-    Counter, Histogram, Gauge, Info,
-    generate_latest, CONTENT_TYPE_LATEST,
+    Counter,
+    Histogram,
+    Gauge,
+    Info,
+    generate_latest,
+    CONTENT_TYPE_LATEST,
 )
 from fastapi import Request
 from fastapi.responses import Response
@@ -55,7 +60,7 @@ user_active = Counter(
 sms_sent = Counter(
     "xiaoz_sms_sent_total",
     "短信发送数",
-    ["status"],   # success / fail
+    ["status"],  # success / fail
 )
 rewrite_calls = Counter(
     "xiaoz_rewrite_calls_total",

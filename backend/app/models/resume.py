@@ -1,5 +1,16 @@
 """简历文件"""
-from sqlalchemy import Column, BigInteger, String, Integer, Boolean, Text, JSON, TIMESTAMP, func
+
+from sqlalchemy import (
+    Column,
+    BigInteger,
+    String,
+    Integer,
+    Boolean,
+    Text,
+    JSON,
+    TIMESTAMP,
+    func,
+)
 from app.core.database import Base
 
 
@@ -19,4 +30,6 @@ class ResumeFile(Base):
     with_jd = Column(Boolean, default=False)
     jd_text = Column(Text)
     is_deleted = Column(Boolean, default=False, nullable=False)
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )

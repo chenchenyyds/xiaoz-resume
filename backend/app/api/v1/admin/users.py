@@ -1,4 +1,5 @@
 """后台 - 用户 4 个 API"""
+
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -7,8 +8,11 @@ from app.core.database import get_db
 from app.core.security import get_current_admin
 from app.services import admin_service
 from app.schemas.admin import (
-    AdminUserListResp, AdminUserItem, AdminUserDetail,
-    AdjustPointsReq, DisableUserReq,
+    AdminUserListResp,
+    AdminUserItem,
+    AdminUserDetail,
+    AdjustPointsReq,
+    DisableUserReq,
 )
 
 router = APIRouter(prefix="/users", tags=["后台-用户"])
@@ -63,4 +67,6 @@ async def adjust_points(
     db: Session = Depends(get_db),
     _admin=Depends(get_current_admin),
 ):
-    return admin_service.adjust_user_points(db, user_id, req.change, req.point_type, req.reason)
+    return admin_service.adjust_user_points(
+        db, user_id, req.change, req.point_type, req.reason
+    )

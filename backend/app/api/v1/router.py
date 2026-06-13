@@ -1,10 +1,25 @@
 """V1 API 路由聚合 - 22 + 6 = 28 个 API"""
+
 from fastapi import APIRouter
 
 from app.api.v1 import (
-    auth, user, files, rewrite, products, orders, redeem, withdraw,
+    auth,
+    user,
+    files,
+    rewrite,
+    products,
+    orders,
+    redeem,
+    withdraw,
 )
-from app.api.v1.admin import dashboard, orders as admin_orders, codes, users, points, logs
+from app.api.v1.admin import (
+    dashboard,
+    orders as admin_orders,
+    codes,
+    users,
+    points,
+    logs,
+)
 
 api_router = APIRouter()
 

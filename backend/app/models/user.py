@@ -1,4 +1,5 @@
 """用户模型"""
+
 from sqlalchemy import Column, BigInteger, Integer, String, Boolean, TIMESTAMP, func
 from app.core.database import Base
 
@@ -14,5 +15,7 @@ class User(Base):
     invite_user_id = Column(Integer, index=True)
     status = Column(String(20), default="active", nullable=False)
     is_admin = Column(Boolean, default=False, nullable=False)
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
     last_active_at = Column(TIMESTAMP(timezone=True))

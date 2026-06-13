@@ -1,4 +1,5 @@
 """鉴权相关 schema"""
+
 from pydantic import BaseModel, Field, validator
 import re
 

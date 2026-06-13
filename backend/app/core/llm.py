@@ -1,4 +1,5 @@
 """DeepSeek LLM 封装 - V1 直接调,不上 LangChain"""
+
 import time
 import json
 from typing import List, Dict, Any, Optional
@@ -14,7 +15,11 @@ def _get_client() -> OpenAI:
     return OpenAI(
         api_key=settings.DEEPSEEK_API_KEY,
         base_url=settings.DEEPSEEK_API_URL,
-        timeout=settings.LLM_TIMEOUT_SECONDS if hasattr(settings, "LLM_TIMEOUT_SECONDS") else 60,
+        timeout=(
+            settings.LLM_TIMEOUT_SECONDS
+            if hasattr(settings, "LLM_TIMEOUT_SECONDS")
+            else 60
+        ),
     )
 
 

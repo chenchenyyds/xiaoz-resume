@@ -13,6 +13,7 @@
 - 增购后扣,因为增购是永久的,留着更灵活
 - 试用最后扣,反正可能随时被新订阅覆盖
 """
+
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
@@ -54,25 +55,30 @@ def grant_points(
     db.add(acc)
     db.flush()
 
-    db.add(PointTransaction(
-        user_id=user_id,
-        point_type=point_type,
-        change=amount,
-        balance_after=amount,
-        source=source,
-        related_id=related_id,
-        feature=feature,
-        remark=remark,
-    ))
-    logger.info(f"加分 user_id={user_id} type={point_type} amount={amount} source={source}")
+    db.add(
+        PointTransaction(
+            user_id=user_id,
+            point_type=point_type,
+            change=amount,
+            balance_after=amount,
+            source=source,
+            related_id=related_id,
+            feature=feature,
+            remark=remark,
+        )
+    )
+    logger.info(
+        f"加分 user_id={user_id} type={point_type} amount={amount} source={source}"
+    )
     return acc
 
 
 def get_balance(db: Session, user_id: int) -> dict:
     """查询三种类型的余额(返回 dict,总量为 sum)"""
     rows = db.execute(
-        select(PointAccount.point_type, PointAccount.balance)
-        .where(PointAccount.user_id == user_id)
+        select(PointAccount.point_type, PointAccount.balance).where(
+            PointAccount.user_id == user_id
+        )
     ).all()
     summary = {"trial_balance": 0, "subscription_balance": 0, "purchase_balance": 0}
     type_map = {
@@ -113,11 +119,17 @@ def consume_points(
         .all()
     )
     # 按 POINT_TYPE_ORDER 重排
-    accounts.sort(key=lambda a: (
-        POINT_TYPE_ORDER.index(a.point_type) if a.point_type in POINT_TYPE_ORDER else 999,
-        a.expire_at or datetime(2099, 1, 1, tzinfo=timezone.utc),
-        a.created_at,
-    ))
+    accounts.sort(
+        key=lambda a: (
+            (
+                POINT_TYPE_ORDER.index(a.point_type)
+                if a.point_type in POINT_TYPE_ORDER
+                else 999
+            ),
+            a.expire_at or datetime(2099, 1, 1, tzinfo=timezone.utc),
+            a.created_at,
+        )
+    )
 
     total_available = sum(a.balance for a in accounts)
     if total_available < amount:
@@ -164,7 +176,9 @@ def consume_points(
         # 理论上不会到这里
         raise BizException(BizCode.INSUFFICIENT_POINTS, "积分不足")
 
-    logger.info(f"扣分 user_id={user_id} amount={amount} feature={feature} deducted_from={len(txns)}")
+    logger.info(
+        f"扣分 user_id={user_id} amount={amount} feature={feature} deducted_from={len(txns)}"
+    )
     return total_deducted, txns
 
 
@@ -181,7 +195,13 @@ def refund_points(
 ) -> PointAccount:
     """退积分（通常是退款或奖励）"""
     return grant_points(
-        db, user_id=user_id, point_type=point_type, amount=amount,
-        source=source, feature=feature, related_id=related_id,
-        remark=remark, expire_at=expire_at,
+        db,
+        user_id=user_id,
+        point_type=point_type,
+        amount=amount,
+        source=source,
+        feature=feature,
+        related_id=related_id,
+        remark=remark,
+        expire_at=expire_at,
     )

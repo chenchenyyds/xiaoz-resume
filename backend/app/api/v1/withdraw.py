@@ -1,4 +1,5 @@
 """提现 API - 1 个(只查余额,V1 暂不真打款)"""
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -22,12 +23,15 @@ async def my_withdraw_balance(
     from sqlalchemy import func
 
     # 查询该用户作为推广人获得的返佣总额(累计)
-    commission_earned = db.query(
-        func.coalesce(func.sum(PointTransaction.change), 0)
-    ).filter(
-        PointTransaction.user_id == user.id,
-        PointTransaction.source == "commission",
-    ).scalar() or 0
+    commission_earned = (
+        db.query(func.coalesce(func.sum(PointTransaction.change), 0))
+        .filter(
+            PointTransaction.user_id == user.id,
+            PointTransaction.source == "commission",
+        )
+        .scalar()
+        or 0
+    )
 
     # 已提现(V1=0)
     withdrawn = 0

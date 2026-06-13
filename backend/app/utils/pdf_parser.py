@@ -2,6 +2,7 @@
 
 pypdf 是纯 Python,无需系统库。
 """
+
 import time
 from io import BytesIO
 from loguru import logger
@@ -15,6 +16,7 @@ def parse_pdf(content: bytes) -> dict:
     t0 = time.time()
     try:
         from pypdf import PdfReader
+
         reader = PdfReader(BytesIO(content))
     except Exception as e:
         logger.exception("PDF 解析失败(bytes 不可读)")
@@ -39,7 +41,9 @@ def parse_pdf(content: bytes) -> dict:
 
     full_text = "\n".join(paragraphs)
     if not full_text.strip():
-        logger.warning(f"PDF 解析后无文本 pages={len(reader.pages)} ok={pages_ok} fail={pages_fail} (可能是扫描件或加密)")
+        logger.warning(
+            f"PDF 解析后无文本 pages={len(reader.pages)} ok={pages_ok} fail={pages_fail} (可能是扫描件或加密)"
+        )
         raise ValueError("PDF 未提取到文本,可能是扫描件或加密文件(暂不支持)")
 
     duration_ms = int((time.time() - t0) * 1000)

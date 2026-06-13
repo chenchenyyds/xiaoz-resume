@@ -1,4 +1,5 @@
 """虎皮椒支付 - V1 唯一支付渠道"""
+
 import hashlib
 import time
 import uuid
@@ -17,13 +18,19 @@ def _md5(s: str) -> str:
 
 def _sign(params: Dict[str, Any], key: str) -> str:
     """虎皮椒签名:按 key 排序后拼接 key=val...&key=密钥,做 MD5"""
-    items = sorted([(k, str(v)) for k, v in params.items() if v is not None and v != ""])
+    items = sorted(
+        [(k, str(v)) for k, v in params.items() if v is not None and v != ""]
+    )
     sign_str = "&".join([f"{k}={v}" for k, v in items]) + f"&key={key}"
     return _md5(sign_str).lower()
 
 
 def _api_url() -> str:
-    base = "https://api.hupijiao.com" if settings.HUPIIJIAO_SANDBOX else settings.HUPIIJIAO_API_URL
+    base = (
+        "https://api.hupijiao.com"
+        if settings.HUPIIJIAO_SANDBOX
+        else settings.HUPIIJIAO_API_URL
+    )
     return base
 
 
@@ -57,7 +64,9 @@ def create_order(
         logger.info(f"虎皮椒下单: order_no={order_no} resp={data}")
 
         if data.get("code") != 200 or not data.get("data", {}).get("pay_url"):
-            raise BizException(BizCode.PAY_ERROR, f"下单失败: {data.get('msg', '未知')}")
+            raise BizException(
+                BizCode.PAY_ERROR, f"下单失败: {data.get('msg', '未知')}"
+            )
         return data["data"]
     except BizException:
         raise

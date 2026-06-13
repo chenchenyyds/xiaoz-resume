@@ -1,4 +1,5 @@
 """后台 - 订单 3 个 API"""
+
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -25,21 +26,28 @@ async def list_orders(
 ):
     items, total = admin_service.list_orders(db, status, product_code, page, page_size)
     return AdminOrderListResp(
-        items=[AdminOrderItem(
-            order_no=o.order_no,
-            user_id=o.user_id,
-            user_phone=getattr(o, "_user", None).phone if getattr(o, "_user", None) else None,
-            product_code=o.product_code,
-            amount=o.amount,
-            pay_amount=o.pay_amount,
-            pay_channel=o.pay_channel,
-            status=o.status,
-            invite_user_id=o.invite_user_id,
-            paid_at=o.paid_at,
-            refunded_at=o.refunded_at,
-            refund_amount=o.refund_amount,
-            created_at=o.created_at,
-        ) for o in items],
+        items=[
+            AdminOrderItem(
+                order_no=o.order_no,
+                user_id=o.user_id,
+                user_phone=(
+                    getattr(o, "_user", None).phone
+                    if getattr(o, "_user", None)
+                    else None
+                ),
+                product_code=o.product_code,
+                amount=o.amount,
+                pay_amount=o.pay_amount,
+                pay_channel=o.pay_channel,
+                status=o.status,
+                invite_user_id=o.invite_user_id,
+                paid_at=o.paid_at,
+                refunded_at=o.refunded_at,
+                refund_amount=o.refund_amount,
+                created_at=o.created_at,
+            )
+            for o in items
+        ],
         total=total,
     )
 
@@ -54,11 +62,18 @@ async def order_detail(
     for o in items:
         if o.order_no == order_no:
             return AdminOrderItem(
-                order_no=o.order_no, user_id=o.user_id,
+                order_no=o.order_no,
+                user_id=o.user_id,
                 user_phone=o.user.phone if o.user else None,
-                product_code=o.product_code, amount=o.amount, pay_amount=o.pay_amount,
-                pay_channel=o.pay_channel, status=o.status, invite_user_id=o.invite_user_id,
-                paid_at=o.paid_at, refunded_at=o.refunded_at, refund_amount=o.refund_amount,
+                product_code=o.product_code,
+                amount=o.amount,
+                pay_amount=o.pay_amount,
+                pay_channel=o.pay_channel,
+                status=o.status,
+                invite_user_id=o.invite_user_id,
+                paid_at=o.paid_at,
+                refunded_at=o.refunded_at,
+                refund_amount=o.refund_amount,
                 created_at=o.created_at,
             )
     raise BizException(BizCode.NOT_FOUND, "订单不存在")

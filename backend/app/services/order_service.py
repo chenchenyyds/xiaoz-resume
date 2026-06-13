@@ -1,4 +1,5 @@
 """订单服务：创建订单、支付回调处理"""
+
 import shortuuid
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -47,15 +48,19 @@ def get_product_list(db: Session) -> list:
     for code, cfg in PRODUCTS.items():
         price = Decimal(get_config(db, cfg["price_key"], "0"))
         points = get_config_int(db, cfg["points_key"], 0)
-        valid_days = get_config_int(db, cfg["valid_days_key"], 0) if cfg["valid_days_key"] else 0
-        result.append({
-            "code": code,
-            "name": cfg["name"],
-            "price": price,
-            "points": points,
-            "valid_days": valid_days,
-            "description": _product_desc(code, points, valid_days),
-        })
+        valid_days = (
+            get_config_int(db, cfg["valid_days_key"], 0) if cfg["valid_days_key"] else 0
+        )
+        result.append(
+            {
+                "code": code,
+                "name": cfg["name"],
+                "price": price,
+                "points": points,
+                "valid_days": valid_days,
+                "description": _product_desc(code, points, valid_days),
+            }
+        )
     return result
 
 
@@ -163,8 +168,14 @@ def handle_hupijiao_notify(db: Session, params: dict) -> str:
         return "success"
 
     points = get_config_int(db, cfg["points_key"], 0)
-    valid_days = get_config_int(db, cfg["valid_days_key"], 30) if cfg["valid_days_key"] else 0
-    expire_at = datetime.now(timezone.utc) + timedelta(days=valid_days) if valid_days > 0 else None
+    valid_days = (
+        get_config_int(db, cfg["valid_days_key"], 30) if cfg["valid_days_key"] else 0
+    )
+    expire_at = (
+        datetime.now(timezone.utc) + timedelta(days=valid_days)
+        if valid_days > 0
+        else None
+    )
 
     points_service.grant_points(
         db,
@@ -220,7 +231,9 @@ def _grant_commission(db: Session, order: Order):
     logger.info(f"推广人 {order.invite_user_id} 获得返佣 {commission_points} 积分")
 
 
-def refund_order(db: Session, order_no: str, amount: Optional[Decimal] = None, reason: str = "") -> dict:
+def refund_order(
+    db: Session, order_no: str, amount: Optional[Decimal] = None, reason: str = ""
+) -> dict:
     """后台管理员退款"""
     order = db.query(Order).filter(Order.order_no == order_no).first()
     if not order:

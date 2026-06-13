@@ -1,4 +1,5 @@
 """商品列表 schema"""
+
 from pydantic import BaseModel
 from typing import List
 from decimal import Decimal

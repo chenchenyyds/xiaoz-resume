@@ -1,4 +1,5 @@
 """积分流水管理 API(后台)"""
+
 from typing import Optional
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Query
@@ -18,8 +19,12 @@ router = APIRouter(prefix="/admin/points", tags=["后台-积分流水"])
 async def list_transactions(
     user_id: Optional[int] = Query(None, description="按用户 ID 筛选"),
     phone: Optional[str] = Query(None, description="按手机号筛选"),
-    feature: Optional[str] = Query(None, description="按功能筛选:partial_rewrite/full_rewrite"),
-    source: Optional[str] = Query(None, description="按来源:order/rewrite/redeem/trial/invite/adjust/refund"),
+    feature: Optional[str] = Query(
+        None, description="按功能筛选:partial_rewrite/full_rewrite"
+    ),
+    source: Optional[str] = Query(
+        None, description="按来源:order/rewrite/redeem/trial/invite/adjust/refund"
+    ),
     change_type: Optional[str] = Query(None, description="earn/spend(获得/消耗)"),
     start_date: Optional[str] = Query(None, description="开始日期 YYYY-MM-DD"),
     end_date: Optional[str] = Query(None, description="结束日期 YYYY-MM-DD"),
@@ -52,10 +57,18 @@ async def list_transactions(
     if start_date:
         q = q.filter(PointTransaction.created_at >= datetime.fromisoformat(start_date))
     if end_date:
-        q = q.filter(PointTransaction.created_at <= datetime.fromisoformat(end_date) + timedelta(days=1))
+        q = q.filter(
+            PointTransaction.created_at
+            <= datetime.fromisoformat(end_date) + timedelta(days=1)
+        )
 
     total = q.count()
-    items = q.order_by(desc(PointTransaction.created_at)).offset((page - 1) * page_size).limit(page_size).all()
+    items = (
+        q.order_by(desc(PointTransaction.created_at))
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
 
     # 关联用户手机号
     user_map = {}
@@ -100,7 +113,9 @@ async def stats(
 ):
     """积分发放/消耗统计,按日聚合"""
     start = datetime.utcnow() - timedelta(days=days)
-    transactions = db.query(PointTransaction).filter(PointTransaction.created_at >= start).all()
+    transactions = (
+        db.query(PointTransaction).filter(PointTransaction.created_at >= start).all()
+    )
 
     # 按日聚合
     daily = {}
@@ -174,13 +189,20 @@ async def adjust_user_points(
     if delta > 0:
         # 增加积分(标记为 adjust 来源)
         grant_points(
-            db, user_id=user_id, points=delta, point_type="purchase",
-            source="adjust", remark=f"管理员 {admin.phone} 调整:+{delta} {remark}",
+            db,
+            user_id=user_id,
+            points=delta,
+            point_type="purchase",
+            source="adjust",
+            remark=f"管理员 {admin.phone} 调整:+{delta} {remark}",
         )
     else:
         # 扣减积分(优先消耗即将过期的)
         consume_points(
-            db, user_id=user_id, points=abs(delta), feature="adjust",
+            db,
+            user_id=user_id,
+            points=abs(delta),
+            feature="adjust",
             remark=f"管理员 {admin.phone} 调整:-{abs(delta)} {remark}",
         )
 

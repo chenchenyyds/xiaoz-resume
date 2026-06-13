@@ -2,6 +2,7 @@
 
 V1 商业化 MVP:9 张表 + 用户端 13 API + 后台 9 API
 """
+
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
@@ -90,6 +91,7 @@ async def user_demo():
     """V1 体验版 - 用户端单页 SPA"""
     from fastapi.responses import FileResponse
     import os
+
     demo_path = os.path.join(os.path.dirname(__file__), "..", "user_demo.html")
     demo_path = os.path.abspath(demo_path)
     if os.path.exists(demo_path):
@@ -102,6 +104,7 @@ async def admin_demo():
     """V1 体验版 - 后台管理单页 SPA"""
     from fastapi.responses import FileResponse
     import os
+
     demo_path = os.path.join(os.path.dirname(__file__), "..", "admin_demo.html")
     demo_path = os.path.abspath(demo_path)
     if os.path.exists(demo_path):
@@ -118,4 +121,10 @@ async def metrics_endpoint():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host=settings.APP_HOST, port=settings.APP_PORT, reload=settings.APP_DEBUG)
+
+    uvicorn.run(
+        "app.main:app",
+        host=settings.APP_HOST,
+        port=settings.APP_PORT,
+        reload=settings.APP_DEBUG,
+    )

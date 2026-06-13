@@ -1,4 +1,5 @@
 """订单 API - 用户端 2 个(创建订单 + 支付链接) + 1 个回调"""
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
@@ -34,15 +35,23 @@ async def get_pay_url(
     db: Session = Depends(get_db),
 ):
     from app.models.order import Order
-    order = db.query(Order).filter(Order.order_no == order_no, Order.user_id == user.id).first()
+
+    order = (
+        db.query(Order)
+        .filter(Order.order_no == order_no, Order.user_id == user.id)
+        .first()
+    )
     if not order:
         from app.core.exceptions import BizException, BizCode
+
         raise BizException(BizCode.NOT_FOUND, "订单不存在")
     if order.status != "pending":
         from app.core.exceptions import BizException, BizCode
+
         raise BizException(BizCode.CONFLICT, f"订单状态 {order.status} 不可支付")
     # 重新创建支付链接
     from app.services import order_service
+
     cfg = order_service.PRODUCTS.get(order.product_code)
     pay_data = __import__("app.core.payment", fromlist=["create_order"]).create_order(
         order_no=order.order_no,
@@ -53,13 +62,16 @@ async def get_pay_url(
 
 
 # ---------- 虎皮椒回调(无需鉴权) ----------
-@router.post("/hupijiao/notify", summary="虎皮椒支付回调", response_class=PlainTextResponse)
+@router.post(
+    "/hupijiao/notify", summary="虎皮椒支付回调", response_class=PlainTextResponse
+)
 async def hupijiao_notify(request: Request, db: Session = Depends(get_db)):
     """虎皮椒回调,以 Form 表单提交"""
     form = await request.form()
     params = dict(form)
     logger_msg = f"虎皮椒回调: {params}"
     from loguru import logger
+
     logger.info(logger_msg)
     result = order_service.handle_hupijiao_notify(db, params)
     return PlainTextResponse(content=result)

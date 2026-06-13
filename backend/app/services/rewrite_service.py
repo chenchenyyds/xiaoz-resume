@@ -11,6 +11,7 @@ V1 保留：
 - 固定 prompt 模板
 - 强结构化输出(JSON)
 """
+
 import json
 import re
 import time
@@ -90,6 +91,7 @@ FULL_REWRITE_WITH_JD_SYSTEM = """你是一位资深的求职咨询师,擅长针�
 # ============================================
 # 业务实现
 # ============================================
+
 
 def partial_rewrite(
     db: Session,
@@ -189,20 +191,28 @@ def full_rewrite(
     )
 
     # 取简历文件
-    rf = db.query(ResumeFile).filter(
-        ResumeFile.id == file_id,
-        ResumeFile.user_id == user_id,
-        ResumeFile.is_deleted == False,
-    ).first()
+    rf = (
+        db.query(ResumeFile)
+        .filter(
+            ResumeFile.id == file_id,
+            ResumeFile.user_id == user_id,
+            ResumeFile.is_deleted == False,
+        )
+        .first()
+    )
     if not rf:
         raise BizException(BizCode.NOT_FOUND, "简历文件不存在或已删除")
     if rf.type == "generated":
         raise BizException(BizCode.PARAM_ERROR, "不能对生成结果再做改写,请上传新简历")
-    logger.info(f"[rewrite.full] user={user_id} 源简历 OK file_id={rf.id} type={rf.type} chars={len(rf.content_text or '')}")
+    logger.info(
+        f"[rewrite.full] user={user_id} 源简历 OK file_id={rf.id} type={rf.type} chars={len(rf.content_text or '')}"
+    )
 
     # 扣分
     deducted, txns = points_service.consume_points(
-        db, user_id=user_id, amount=cost,
+        db,
+        user_id=user_id,
+        amount=cost,
         feature="full_rewrite_with_jd" if has_jd else "full_rewrite",
     )
     txn = txns[0] if txns else None
@@ -301,7 +311,7 @@ def full_rewrite(
         "points_cost": cost,
         "points_remaining": balance,
         "record_id": record.id,
-        "file_url": docx_url,    # 主下载(docx),兼容老字段
+        "file_url": docx_url,  # 主下载(docx),兼容老字段
         "docx_url": docx_url,
         "pdf_url": pdf_url,
     }

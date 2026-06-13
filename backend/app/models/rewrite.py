@@ -1,4 +1,5 @@
 """改写记录"""
+
 from sqlalchemy import Column, BigInteger, String, Integer, Text, JSON, TIMESTAMP, func
 from app.core.database import Base
 
@@ -23,4 +24,6 @@ class RewriteRecord(Base):
     input_tokens = Column(Integer)
     output_tokens = Column(Integer)
     duration_ms = Column(Integer)
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )

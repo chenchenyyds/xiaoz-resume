@@ -4,8 +4,10 @@
     cd backend
     pytest tests/test_points_fifo.py -v
 """
+
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from datetime import datetime, timedelta, timezone
@@ -23,7 +25,9 @@ from app.services.config_service import _cache
 # 用 SQLite 内存数据库跑测试
 @pytest.fixture
 def db():
-    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+    engine = create_engine(
+        "sqlite:///:memory:", connect_args={"check_same_thread": False}
+    )
     Base.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine)
     db = SessionLocal()
@@ -44,8 +48,12 @@ def user(db):
 def test_grant_points_creates_account_and_transaction(db, user):
     """加分应同时建账户批次 + 流水"""
     acc = points_service.grant_points(
-        db, user_id=user.id, point_type="trial",
-        amount=50, source="trial", feature="register",
+        db,
+        user_id=user.id,
+        point_type="trial",
+        amount=50,
+        source="trial",
+        feature="register",
     )
     db.commit()
 
@@ -63,12 +71,28 @@ def test_grant_points_creates_account_and_transaction(db, user):
 def test_fifo_consume_order(db, user):
     """FIFO 消耗：subscription 先于 trial 先于 purchase"""
     # 加 3 种积分
-    points_service.grant_points(db, user.id, "purchase", 100, "purchase", expire_at=None)
+    points_service.grant_points(
+        db, user.id, "purchase", 100, "purchase", expire_at=None
+    )
     db.commit()
     # 让 subscription 早于 trial 入账(让 subscription 先消耗)
-    points_service.grant_points(db, user.id, "subscription", 200, "sub", expire_at=datetime.now(timezone.utc) + timedelta(days=10))
+    points_service.grant_points(
+        db,
+        user.id,
+        "subscription",
+        200,
+        "sub",
+        expire_at=datetime.now(timezone.utc) + timedelta(days=10),
+    )
     db.commit()
-    points_service.grant_points(db, user.id, "trial", 300, "trial", expire_at=datetime.now(timezone.utc) + timedelta(days=90))
+    points_service.grant_points(
+        db,
+        user.id,
+        "trial",
+        300,
+        "trial",
+        expire_at=datetime.now(timezone.utc) + timedelta(days=90),
+    )
     db.commit()
 
     # 消耗 250 分
@@ -94,14 +118,22 @@ def test_insufficient_points_raises(db, user):
 
     with pytest.raises(Exception) as exc:
         points_service.consume_points(db, user.id, amount=100, feature="test")
-    assert "积分不足" in str(exc.value) or "INSUFFICIENT" in str(exc.value) or "41001" in str(exc.value)
+    assert (
+        "积分不足" in str(exc.value)
+        or "INSUFFICIENT" in str(exc.value)
+        or "41001" in str(exc.value)
+    )
 
 
 def test_expired_accounts_ignored(db, user):
     """已过期的账户余额视为 0"""
     # 加 50 试用积分,但已过期
     points_service.grant_points(
-        db, user.id, "trial", 50, "trial",
+        db,
+        user.id,
+        "trial",
+        50,
+        "trial",
         expire_at=datetime.now(timezone.utc) - timedelta(days=1),
     )
     db.commit()
@@ -130,8 +162,12 @@ def test_refund_adds_points(db, user):
     db.commit()
 
     points_service.refund_points(
-        db, user_id=user.id, point_type="subscription", amount=500,
-        source="refund", feature="order_refund",
+        db,
+        user_id=user.id,
+        point_type="subscription",
+        amount=500,
+        source="refund",
+        feature="order_refund",
     )
     db.commit()
 

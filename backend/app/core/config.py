@@ -1,4 +1,5 @@
 """配置管理 - 全部从环境变量读"""
+
 from typing import List
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -23,7 +24,9 @@ class Settings(BaseSettings):
     APP_FRONTEND_ADMIN_URL: str = "http://localhost:5174"
 
     # ---------- 数据库 ----------
-    DATABASE_URL: str = "postgresql+psycopg2://xiaoz:xiaoz_pwd@localhost:5432/xiaoz_resume"
+    DATABASE_URL: str = (
+        "postgresql+psycopg2://xiaoz:xiaoz_pwd@localhost:5432/xiaoz_resume"
+    )
 
     # ---------- Redis ----------
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -65,7 +68,9 @@ class Settings(BaseSettings):
     ADMIN_DEFAULT_PHONE: str = "13800000000"
 
     # ---------- CORS ----------
-    CORS_ORIGINS: List[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:5174"])
+    CORS_ORIGINS: List[str] = Field(
+        default_factory=lambda: ["http://localhost:5173", "http://localhost:5174"]
+    )
 
 
 settings = Settings()

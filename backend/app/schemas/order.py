@@ -1,4 +1,5 @@
 """订单相关 schema"""
+
 from pydantic import BaseModel, Field
 from typing import Optional
 from decimal import Decimal
@@ -36,6 +37,7 @@ class OrderListResp(BaseModel):
 
 class HupijiaoNotifyReq(BaseModel):
     """虎皮椒回调字段(实际用 Form)"""
+
     merchant: str
     order_no: str
     amount: str

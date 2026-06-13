@@ -1,5 +1,15 @@
 """管理员操作日志表"""
-from sqlalchemy import Column, BigInteger, Integer, String, Text, TIMESTAMP, ForeignKey, JSON
+
+from sqlalchemy import (
+    Column,
+    BigInteger,
+    Integer,
+    String,
+    Text,
+    TIMESTAMP,
+    ForeignKey,
+    JSON,
+)
 from sqlalchemy.sql import func
 
 from app.core.database import Base
@@ -10,6 +20,7 @@ class OperationLog(Base):
 
     记录:谁(管理员)在什么时间对什么目标做了什么操作
     """
+
     __tablename__ = "operation_logs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -28,13 +39,15 @@ class OperationLog(Base):
     # - login                后台登录(可选记录)
 
     target_type = Column(String(50))  # 目标类型:order/user/code/config
-    target_id = Column(Integer)   # 目标 ID
+    target_id = Column(Integer)  # 目标 ID
 
-    before_value = Column(JSON)       # 操作前值(JSON)
-    after_value = Column(JSON)        # 操作后值(JSON)
-    remark = Column(Text)             # 备注/原因
+    before_value = Column(JSON)  # 操作前值(JSON)
+    after_value = Column(JSON)  # 操作后值(JSON)
+    remark = Column(Text)  # 备注/原因
 
-    ip = Column(String(64))           # 操作者 IP
+    ip = Column(String(64))  # 操作者 IP
     user_agent = Column(String(512))  # 浏览器 UA
 
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False, index=True)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False, index=True
+    )

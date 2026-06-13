@@ -1,5 +1,15 @@
 """积分账户 + 流水"""
-from sqlalchemy import Column, BigInteger, String, Integer, Text, TIMESTAMP, ForeignKey, func
+
+from sqlalchemy import (
+    Column,
+    BigInteger,
+    String,
+    Integer,
+    Text,
+    TIMESTAMP,
+    ForeignKey,
+    func,
+)
 from app.core.database import Base
 
 
@@ -15,8 +25,12 @@ class PointAccount(Base):
     expire_at = Column(TIMESTAMP(timezone=True))
     source = Column(String(50))
     related_id = Column(Integer)
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
 
 
 class PointTransaction(Base):
@@ -32,4 +46,6 @@ class PointTransaction(Base):
     related_id = Column(Integer)
     feature = Column(String(50))
     remark = Column(Text)
-    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
